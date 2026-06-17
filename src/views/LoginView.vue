@@ -135,11 +135,25 @@ async function handleLogin() {
       </div>
 
       <!-- Hint de demo -->
-      <div class="mt-6 alert-info text-xs text-center space-y-1">
-        <p class="font-semibold">Credenciais de demo</p>
-        <p><strong>Cliente:</strong> 123.456.789-00 / 123456</p>
-        <p><strong>Analista:</strong> 111.111.111-11 / 123456</p>
-        <p><strong>Gerente:</strong> 222.222.222-22 / 123456</p>
+      <div class="mt-6 bg-gray-800/90 rounded-xl px-4 py-3 text-xs space-y-2">
+        <p class="font-semibold text-gray-300 mb-1">Credenciais de demo</p>
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-500/20 text-blue-300">CLIENTE</span>
+            <span class="text-gray-400">João da Silva</span>
+            <span class="ml-auto font-mono text-gray-500">123.456.789-00 / 123456</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-300">MESA 1</span>
+            <span class="text-gray-400">Pedro Alves</span>
+            <span class="ml-auto font-mono text-gray-500">111.111.111-11 / 123456</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-500/20 text-purple-300">GERENTE</span>
+            <span class="text-gray-400">Carlos Mendes</span>
+            <span class="ml-auto font-mono text-gray-500">222.222.222-22 / 123456</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>

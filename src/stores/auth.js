@@ -2,7 +2,7 @@ import { reactive, readonly } from 'vue'
 
 const MOCK_USERS = {
   '123.456.789-00': { senha: '123456', role: 'client',   nome: 'João da Silva',   cpf: '123.456.789-00' },
-  '111.111.111-11': { senha: '123456', role: 'analyst',  nome: 'Ana Costa',       cpf: '111.111.111-11' },
+  '111.111.111-11': { senha: '123456', role: 'analyst',  nome: 'Pedro Alves',     cpf: '111.111.111-11' },
   '222.222.222-22': { senha: '123456', role: 'manager',  nome: 'Carlos Mendes',   cpf: '222.222.222-22' },
 }
 
