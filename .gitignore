@@ -1,0 +1,19 @@
+node_modules/
+dist/
+
+# Editor and local environment
+.vscode/
+.idea/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local/copilot support files
+copilot-config/
+
+# Product documentation kept fora do versionamento por solicitação
+PRD.md
+readme.md

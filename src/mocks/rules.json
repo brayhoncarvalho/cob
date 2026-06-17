@@ -1,0 +1,17 @@
+{
+  "entradaMinimaPct": 0.20,
+  "parcelasMaxAutoAprovacao": 12,
+  "atrasoMaxAutoAprovacao": 60,
+  "valorMaxAutoAprovacao": 20000,
+  "alcada1NivelMax": 20000,
+  "parcelaMinimaValor": 100,
+  "prazoEntradaHoras": 48,
+  "cooldownCancelamentoDias": 30,
+  "descontoMaxPorFaixa": {
+    "0-30": 0.00,
+    "31-60": 0.05,
+    "61-90": 0.10,
+    "91-120": 0.15,
+    "120+": 0.30
+  }
+}
