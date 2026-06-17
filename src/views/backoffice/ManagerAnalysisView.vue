@@ -4,12 +4,13 @@ import { useRoute, useRouter } from 'vue-router'
 import BackofficeLayout from '@/layouts/BackofficeLayout.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
 import { useFlow } from '@/stores/flow.js'
-import rules from '@/mocks/rules.json'
+import { useRules } from '@/stores/rules.js'
 
 const route  = useRoute()
 const router = useRouter()
 const { formatMoney, formatDateTime } = useFormatters()
 const { state: flowState, approveNegotiation, rejectNegotiation, counterNegotiation } = useFlow()
+const { rules } = useRules()
 
 const neg      = computed(() => flowState.negotiations.find(n => n.id === route.params.id))
 const contract = computed(() => flowState.contracts.find(c => c.id === neg.value?.contratoId))

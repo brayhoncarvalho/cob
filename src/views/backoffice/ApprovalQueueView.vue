@@ -5,11 +5,12 @@ import BackofficeLayout from '@/layouts/BackofficeLayout.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
 import { useFlow } from '@/stores/flow.js'
-import rules from '@/mocks/rules.json'
+import { useRules } from '@/stores/rules.js'
 
 const router = useRouter()
 const { formatMoney, formatDateTime } = useFormatters()
 const { state: flowState } = useFlow()
+const { rules } = useRules()
 
 const filtroStatus = ref('todos')
 const filtroNivel  = ref('1')

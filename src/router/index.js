@@ -17,6 +17,7 @@ const ApprovalQueueView    = () => import('@/views/backoffice/ApprovalQueueView.
 const ProposalAnalysisView = () => import('@/views/backoffice/ProposalAnalysisView.vue')
 const ManagerDashboardView = () => import('@/views/backoffice/ManagerDashboardView.vue')
 const ManagerAnalysisView  = () => import('@/views/backoffice/ManagerAnalysisView.vue')
+const ParametrosView       = () => import('@/views/backoffice/ParametrosView.vue')
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -42,6 +43,7 @@ const routes = [
   // Back-office — Gerente (2º Nível)
   { path: '/backoffice/gerente',             component: ManagerDashboardView, meta: { requiresAuth: true, role: 'manager' } },
   { path: '/backoffice/gerente/proposta/:id',component: ManagerAnalysisView,  meta: { requiresAuth: true, role: 'manager' } },
+  { path: '/backoffice/gerente/parametros',   component: ParametrosView,       meta: { requiresAuth: true, role: 'manager' } },
 
   // Fallback
   { path: '/:pathMatch(.*)*', redirect: '/login' },

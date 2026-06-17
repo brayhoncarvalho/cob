@@ -5,14 +5,14 @@ import ClientLayout from '@/layouts/ClientLayout.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
 import { useProposal } from '@/stores/proposal.js'
 import { useFlow } from '@/stores/flow.js'
-import contractsData from '@/mocks/contracts.json'
-import rules from '@/mocks/rules.json'
+import { useRules } from '@/stores/rules.js'
 
 const route  = useRoute()
 const router = useRouter()
 const { formatMoney, formatDate } = useFormatters()
 const { setProposal, setResult, setContractSnapshot } = useProposal()
 const { state: flowState, submitProposal: flowSubmit } = useFlow()
+const { rules } = useRules()
 
 const contract = computed(() => flowState.contracts.find(c => c.id === route.params.id))
 
