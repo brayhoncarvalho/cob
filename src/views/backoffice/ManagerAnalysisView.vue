@@ -3,16 +3,16 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BackofficeLayout from '@/layouts/BackofficeLayout.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
-import negotiationsData from '@/mocks/negotiations.json'
-import contractsData from '@/mocks/contracts.json'
+import { useFlow } from '@/stores/flow.js'
 import rules from '@/mocks/rules.json'
 
 const route  = useRoute()
 const router = useRouter()
 const { formatMoney, formatDateTime } = useFormatters()
+const { state: flowState, approveNegotiation, rejectNegotiation, counterNegotiation } = useFlow()
 
-const neg      = computed(() => negotiationsData.find(n => n.id === route.params.id))
-const contract = computed(() => contractsData.find(c => c.id === neg.value?.contratoId))
+const neg      = computed(() => flowState.negotiations.find(n => n.id === route.params.id))
+const contract = computed(() => flowState.contracts.find(c => c.id === neg.value?.contratoId))
 
 const decisao   = ref(null)
 const motivo    = ref('')
@@ -39,8 +39,22 @@ async function confirmar() {
   loading.value = true
   await new Promise(r => setTimeout(r, 800))
   loading.value = false
-  done.value = true
-  doneMsg.value = { aprovar: 'Proposta aprovada pelo 2º Nível!', reprovar: 'Proposta reprovada. Cliente notificado.', contraproposta: 'Contraproposta enviada ao cliente.' }[decisao.value]
+
+  const id = neg.value.id
+  if (decisao.value === 'aprovar') {
+    approveNegotiation(id, { motivo: motivo.value })
+  } else if (decisao.value === 'reprovar') {
+    rejectNegotiation(id, { motivo: motivo.value })
+  } else if (decisao.value === 'contraproposta') {
+    counterNegotiation(id, {
+      motivo: motivo.value,
+      entrada: undefined,
+      numParcelas: undefined,
+      valorParcela: undefined,
+    })
+  }
+
+  router.push('/backoffice/gerente')
 }
 </script>
 

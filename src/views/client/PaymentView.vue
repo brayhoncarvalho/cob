@@ -3,13 +3,14 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
-import contractsData from '@/mocks/contracts.json'
+import { useFlow } from '@/stores/flow.js'
 
 const route  = useRoute()
 const router = useRouter()
 const { formatMoney, formatDate } = useFormatters()
+const { state: flowState } = useFlow()
 
-const contract = computed(() => contractsData.find(c => c.id === route.params.id))
+const contract = computed(() => flowState.contracts.find(c => c.id === route.params.id))
 
 // Parcelas a pagar: se query tem ?parcelas=9,10 usa essas; senão pega todas vencidas
 const parcelasSelecionadas = computed(() => {

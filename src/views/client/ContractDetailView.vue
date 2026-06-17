@@ -4,14 +4,15 @@ import { useRoute, useRouter } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
-import contractsData from '@/mocks/contracts.json'
+import { useFlow } from '@/stores/flow.js'
 import negotiationsData from '@/mocks/negotiations.json'
 
 const route  = useRoute()
 const router = useRouter()
 const { formatMoney, formatDate } = useFormatters()
+const { state: flowState } = useFlow()
 
-const contract = computed(() => contractsData.find(c => c.id === route.params.id))
+const contract = computed(() => flowState.contracts.find(c => c.id === route.params.id))
 const acordoAtivo = computed(() => {
   if (!contract.value?.acordoAtivo) return null
   return negotiationsData.find(n => n.id === contract.value.acordoAtivo)

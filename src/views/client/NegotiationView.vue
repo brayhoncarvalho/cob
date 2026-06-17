@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
 import { useProposal } from '@/stores/proposal.js'
+import { useFlow } from '@/stores/flow.js'
 import contractsData from '@/mocks/contracts.json'
 import rules from '@/mocks/rules.json'
 
@@ -11,8 +12,9 @@ const route  = useRoute()
 const router = useRouter()
 const { formatMoney, formatDate } = useFormatters()
 const { setProposal, setResult, setContractSnapshot } = useProposal()
+const { state: flowState, submitProposal: flowSubmit } = useFlow()
 
-const contract = computed(() => contractsData.find(c => c.id === route.params.id))
+const contract = computed(() => flowState.contracts.find(c => c.id === route.params.id))
 
 // Desconto máximo pela faixa de atraso
 const descontoPct = computed(() => {
@@ -87,16 +89,34 @@ const canSubmit = computed(() => !proposalStatus.value.startsWith('blocked'))
 
 function submit() {
   if (!canSubmit.value) return
+
+  // Gera ID antecipado para linkar proposta e fluxo
+  const id = `NEG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+
+  // Persiste no flow store (cria a negotiation de verdade)
+  flowSubmit({
+    id,
+    contratoId:    contract.value.id,
+    entrada:       entrada.value,
+    numParcelas:   numParcelas.value,
+    valorParcela:  valorParcela.value,
+    totalAcordo:   totalAcordo.value,
+    desconto:      descontoReais.value,
+    proposalStatus: proposalStatus.value,
+  })
+
+  // Passa dados para a tela de resultado
   setProposal({
-    contratoId: contract.value.id,
-    entrada: entrada.value,
-    numParcelas: numParcelas.value,
-    valorParcela: valorParcela.value,
+    id,
+    contratoId:    contract.value.id,
+    entrada:       entrada.value,
+    numParcelas:   numParcelas.value,
+    valorParcela:  valorParcela.value,
     diaVencimento: diaVencimento.value,
-    totalAcordo: totalAcordo.value,
-    totalDivida: totalDue.value,
-    desconto: descontoReais.value,
-    descontoPct: descontoPct.value,
+    totalAcordo:   totalAcordo.value,
+    totalDivida:   totalDue.value,
+    desconto:      descontoReais.value,
+    descontoPct:   descontoPct.value,
     primeiroBoleto: primeiroBoleto.value,
   })
   setResult({ scenario: proposalStatus.value })

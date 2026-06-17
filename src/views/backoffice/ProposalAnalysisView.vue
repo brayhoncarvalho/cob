@@ -4,16 +4,16 @@ import { useRoute, useRouter } from 'vue-router'
 import BackofficeLayout from '@/layouts/BackofficeLayout.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
-import negotiationsData from '@/mocks/negotiations.json'
-import contractsData from '@/mocks/contracts.json'
+import { useFlow } from '@/stores/flow.js'
 import rules from '@/mocks/rules.json'
 
 const route  = useRoute()
 const router = useRouter()
 const { formatMoney, formatDate, formatDateTime } = useFormatters()
+const { state: flowState, approveNegotiation, rejectNegotiation, counterNegotiation, escalateNegotiation } = useFlow()
 
-const neg      = computed(() => negotiationsData.find(n => n.id === route.params.id))
-const contract = computed(() => contractsData.find(c => c.id === neg.value?.contratoId))
+const neg      = computed(() => flowState.negotiations.find(n => n.id === route.params.id))
+const contract = computed(() => flowState.contracts.find(c => c.id === neg.value?.contratoId))
 
 // Análise automática das regras
 const analise = computed(() => {
@@ -69,13 +69,24 @@ async function confirmar() {
   loading.value = true
   await new Promise(r => setTimeout(r, 800))
   loading.value = false
-  done.value = true
-  doneMsg.value = {
-    aprovar:       'Proposta aprovada! Cliente foi notificado.',
-    reprovar:      'Proposta reprovada. Cliente foi notificado com o motivo.',
-    contraproposta:'Contraproposta enviada ao cliente.',
-    escalar:       'Proposta escalada para o 2º Nível.',
-  }[decisao.value]
+
+  const id = neg.value.id
+  if (decisao.value === 'aprovar') {
+    approveNegotiation(id, { motivo: motivo.value })
+  } else if (decisao.value === 'reprovar') {
+    rejectNegotiation(id, { motivo: motivo.value })
+  } else if (decisao.value === 'contraproposta') {
+    counterNegotiation(id, {
+      motivo: motivo.value,
+      entrada: contraEntrada.value,
+      numParcelas: contraParcelas.value,
+      valorParcela: contraValorParc.value,
+    })
+  } else if (decisao.value === 'escalar') {
+    escalateNegotiation(id)
+  }
+
+  router.push('/backoffice/fila')
 }
 </script>
 

@@ -3,13 +3,14 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
-import contractsData from '@/mocks/contracts.json'
+import { useFlow } from '@/stores/flow.js'
 
 const route  = useRoute()
 const router = useRouter()
 const { formatMoney, formatDate } = useFormatters()
+const { state: flowState } = useFlow()
 
-const contract = computed(() => contractsData.find(c => c.id === route.params.id))
+const contract = computed(() => flowState.contracts.find(c => c.id === route.params.id))
 
 const parcelasFuturas = computed(() =>
   contract.value?.parcelas.filter(p => p.status === 'futura' || p.status === 'proxima') ?? []

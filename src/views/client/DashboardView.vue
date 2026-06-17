@@ -5,15 +5,15 @@ import ClientLayout from '@/layouts/ClientLayout.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { useAuth } from '@/stores/auth.js'
 import { useFormatters } from '@/composables/useFormatters.js'
-import contractsData from '@/mocks/contracts.json'
-import negotiationsData from '@/mocks/negotiations.json'
+import { useFlow } from '@/stores/flow.js'
 
 const { state } = useAuth()
 const { formatMoney, formatDate } = useFormatters()
 const router = useRouter()
+const { state: flowState } = useFlow()
 
-const contracts = contractsData
-const negotiations = negotiationsData
+const contracts    = computed(() => flowState.contracts)
+const negotiations = computed(() => flowState.negotiations)
 
 const totalVencidas     = computed(() => contracts.reduce((s, c) => s + c.parcelasVencidas, 0))
 const totalEmAberto     = computed(() => contracts.filter(c => c.status === 'em_atraso').reduce((s, c) => s + c.saldoDevedor, 0))

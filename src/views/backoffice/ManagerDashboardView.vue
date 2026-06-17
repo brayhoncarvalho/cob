@@ -4,21 +4,19 @@ import { useRouter } from 'vue-router'
 import BackofficeLayout from '@/layouts/BackofficeLayout.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
-import negotiationsData from '@/mocks/negotiations.json'
-import contractsData from '@/mocks/contracts.json'
+import { useFlow } from '@/stores/flow.js'
 
 const router = useRouter()
 const { formatMoney, formatDateTime } = useFormatters()
+const { state: flowState } = useFlow()
 
-// 2º Nível recebe propostas escaladas (nivel=2)
-// Para o demo, mostramos NEG-2026-4521 como escalada
+// 2º Nível: propostas escaladas (nivel=2, em_analise)
 const escaladas = computed(() =>
-  negotiationsData
-    .filter(n => n.status === 'em_analise')
+  flowState.negotiations
+    .filter(n => n.status === 'em_analise' && (n.nivel ?? 1) === 2)
     .map(n => ({
       ...n,
-      contrato: contractsData.find(c => c.id === n.contratoId),
-      nivel: 2,
+      contrato: flowState.contracts.find(c => c.id === n.contratoId),
     }))
 )
 

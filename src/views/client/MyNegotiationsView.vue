@@ -4,14 +4,15 @@ import { useRouter } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
-import negotiationsData from '@/mocks/negotiations.json'
+import { useFlow } from '@/stores/flow.js'
 
 const router = useRouter()
 const { formatMoney, formatDate, formatDateTime } = useFormatters()
+const { state: flowState } = useFlow()
 
 // Ordenar: em análise primeiro, depois por data desc
 const negotiations = computed(() =>
-  [...negotiationsData].sort((a, b) => {
+  [...flowState.negotiations].sort((a, b) => {
     const order = { em_analise: 0, contraproposta: 1, em_pagamento: 2, aprovada: 3, reprovada: 4, cancelada: 5 }
     const oa = order[a.status] ?? 9
     const ob = order[b.status] ?? 9

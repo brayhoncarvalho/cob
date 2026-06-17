@@ -4,19 +4,19 @@ import { useRouter } from 'vue-router'
 import BackofficeLayout from '@/layouts/BackofficeLayout.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
-import negotiationsData from '@/mocks/negotiations.json'
-import contractsData from '@/mocks/contracts.json'
+import { useFlow } from '@/stores/flow.js'
 import rules from '@/mocks/rules.json'
 
 const router = useRouter()
 const { formatMoney, formatDateTime } = useFormatters()
+const { state: flowState } = useFlow()
 
 const filtroStatus = ref('todos')
 const filtroNivel  = ref('1')
 
 // Propostas pendentes para análise — 1º Nível: dívida ≤ R$20k
 const pendentes = computed(() => {
-  const base = negotiationsData.filter(n =>
+  const base = flowState.negotiations.filter(n =>
     n.status === 'em_analise' && (n.nivel ?? 1) === 1
   )
   if (filtroStatus.value === 'todos') return base
@@ -26,7 +26,7 @@ const pendentes = computed(() => {
 // Enriquece com dados do contrato
 const itens = computed(() =>
   pendentes.value.map(n => {
-    const c = contractsData.find(c => c.id === n.contratoId)
+    const c = flowState.contracts.find(c => c.id === n.contratoId)
     const enviada = new Date(n.dataEnvio)
     const agora   = new Date()
     const horasNaFila = Math.floor((agora - enviada) / 3600000)

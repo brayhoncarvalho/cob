@@ -4,21 +4,21 @@ import { useRoute } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
-import negotiationsData from '@/mocks/negotiations.json'
+import { useFlow } from '@/stores/flow.js'
 
 const route = useRoute()
 const { formatMoney, formatDate, formatDateTime } = useFormatters()
+const { state: flowState, markParcelaPaid } = useFlow()
 
-const negotiation = computed(() => negotiationsData.find(n => n.id === route.params.id))
+const negotiation = computed(() => flowState.negotiations.find(n => n.id === route.params.id))
 
-// Pagamento mockado
+// Pagamento com persistência no flow store
 const pagandoIndex = ref(null)
-const pago = ref(new Set())
 
 function pagarParcela(idx) {
   pagandoIndex.value = idx
   setTimeout(() => {
-    pago.value.add(idx)
+    markParcelaPaid(negotiation.value.id, idx)
     pagandoIndex.value = null
   }, 1200)
 }
@@ -113,10 +113,10 @@ function copiarPix() {
                 <td class="py-2.5">{{ formatDate(p.vencimento) }}</td>
                 <td class="py-2.5 text-right font-semibold">{{ formatMoney(p.valor) }}</td>
                 <td class="py-2.5 text-center">
-                  <StatusBadge :status="pago.has(idx) ? 'paga' : p.status" small />
+                  <StatusBadge :status="p.status" small />
                 </td>
                 <td class="py-2.5 text-right">
-                  <template v-if="!pago.has(idx) && (p.status === 'proxima' || p.status === 'futura')">
+                  <template v-if="p.status === 'proxima' || p.status === 'futura'">
                     <button
                       @click="pagarParcela(idx)"
                       :disabled="pagandoIndex === idx"

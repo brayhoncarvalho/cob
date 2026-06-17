@@ -4,10 +4,12 @@ import { useRouter } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
 import { useProposal } from '@/stores/proposal.js'
+import { useFlow } from '@/stores/flow.js'
 
 const router = useRouter()
 const { formatMoney } = useFormatters()
 const { state, clear } = useProposal()
+const { acceptCounter } = useFlow()
 
 // Redireciona se não há proposta (navegação direta)
 onMounted(() => {
@@ -18,10 +20,8 @@ const scenario = computed(() => state.result?.scenario ?? 'auto')
 const proposal = computed(() => state.proposal)
 const contract = computed(() => state.contractSnapshot)
 
-// Protocolo mockado
-const protocolo = computed(() =>
-  `NEG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
-)
+// Usa o ID gerado na NegotiationView
+const protocolo = computed(() => proposal.value?.id ?? `NEG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`)
 
 // Prazo para pagar a entrada
 const prazoEntrada = computed(() => {
@@ -33,6 +33,13 @@ const prazoEntrada = computed(() => {
 function goNovaProposta() {
   clear()
   router.push(`/contratos/${proposal.value?.contratoId}/negociar`)
+}
+
+function handleAcceptCounter() {
+  if (!proposal.value?.id) return
+  acceptCounter(proposal.value.id)
+  clear()
+  router.push(`/negociacoes/${proposal.value.id}`)
 }
 </script>
 
@@ -182,7 +189,7 @@ function goNovaProposta() {
                 <span class="font-medium text-purple-900">{{ Math.ceil((proposal.numParcelas ?? 6) * 0.7) }}x de {{ formatMoney((proposal.valorParcela ?? 0) * 1.2) }}</span>
               </div>
             </div>
-            <button class="btn-primary w-full mt-4 text-sm">Aceitar Contraproposta</button>
+            <button @click="handleAcceptCounter" class="btn-primary w-full mt-4 text-sm">Aceitar Contraproposta</button>
           </div>
 
           <div class="space-y-3">

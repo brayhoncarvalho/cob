@@ -4,14 +4,15 @@ import { useRouter } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
-import contractsData from '@/mocks/contracts.json'
+import { useFlow } from '@/stores/flow.js'
 
 const router = useRouter()
 const { formatMoney } = useFormatters()
+const { state: flowState } = useFlow()
 
 // Contratos em atraso primeiro
 const contracts = computed(() =>
-  [...contractsData].sort((a, b) => {
+  [...flowState.contracts].sort((a, b) => {
     const order = { em_atraso: 0, renegociado: 1, em_dia: 2 }
     return (order[a.status] ?? 3) - (order[b.status] ?? 3)
   })
