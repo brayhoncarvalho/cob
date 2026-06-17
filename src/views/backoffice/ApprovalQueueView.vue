@@ -44,7 +44,7 @@ const itens = computed(() =>
 )
 
 // Estatísticas
-const totalPendentes   = computed(() => negotiationsData.filter(n => n.status === 'em_analise').length)
+const totalPendentes   = computed(() => flowState.negotiations.filter(n => n.status === 'em_analise').length)
 const totalEmAnalise   = 0
 const resolvidasHoje   = 1
 

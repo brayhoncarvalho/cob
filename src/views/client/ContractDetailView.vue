@@ -5,7 +5,6 @@ import ClientLayout from '@/layouts/ClientLayout.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
 import { useFlow } from '@/stores/flow.js'
-import negotiationsData from '@/mocks/negotiations.json'
 
 const route  = useRoute()
 const router = useRouter()
@@ -15,7 +14,7 @@ const { state: flowState } = useFlow()
 const contract = computed(() => flowState.contracts.find(c => c.id === route.params.id))
 const acordoAtivo = computed(() => {
   if (!contract.value?.acordoAtivo) return null
-  return negotiationsData.find(n => n.id === contract.value.acordoAtivo)
+  return flowState.negotiations.find(n => n.id === contract.value.acordoAtivo)
 })
 
 const showAll = ref(false)
