@@ -150,20 +150,20 @@ async function handleLogin() {
       </div>
 
       <!-- Hint de demo -->
-      <div class="mt-6 alert-info rounded-xl px-4 py-3 text-xs space-y-2">
-        <p class="font-semibold text-blue-700 mb-1">Demo — clique para preencher</p>
-        <div class="space-y-1">
+      <div class="mt-6 alert-info rounded-xl px-4 py-3 text-xs">
+        <p class="font-semibold text-blue-700 mb-2">Demo — clique para preencher</p>
+        <div class="grid grid-cols-3 gap-2">
           <button
             v-for="u in DEMO_USERS"
             :key="u.cpf"
             type="button"
             @click="fillCredentials(u)"
-            class="w-full flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors text-left"
-            :class="activeDemo === u.cpf ? 'bg-blue-100/80' : 'hover:bg-blue-50'"
+            class="flex flex-col items-center gap-1 rounded-lg px-2 py-2 transition-colors text-center"
+            :class="activeDemo === u.cpf ? 'bg-blue-100/80 ring-1 ring-blue-300' : 'hover:bg-blue-50'"
           >
-            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold shrink-0" :class="u.labelClass">{{ u.label }}</span>
-            <span class="text-blue-800">{{ u.nome }}</span>
-            <svg v-if="activeDemo === u.cpf" class="ml-auto w-3.5 h-3.5 text-blue-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold" :class="u.labelClass">{{ u.label }}</span>
+            <span class="text-blue-800 font-medium leading-tight">{{ u.nome.split(' ')[0] }}</span>
+            <svg v-if="activeDemo === u.cpf" class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
           </button>
         </div>
       </div>

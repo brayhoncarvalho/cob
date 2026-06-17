@@ -16,7 +16,11 @@ const contracts    = flowState.contracts
 const negotiations = flowState.negotiations
 
 const totalVencidas     = computed(() => contracts.reduce((s, c) => s + c.parcelasVencidas, 0))
-const totalEmAberto     = computed(() => contracts.filter(c => c.status === 'em_atraso').reduce((s, c) => s + c.saldoDevedor, 0))
+// totalEmAberto = soma real das parcelas vencidas (não o saldo devedor total)
+const totalEmAberto     = computed(() =>
+  contracts.flatMap(c => c.parcelas.filter(p => p.status === 'vencida'))
+           .reduce((s, p) => s + p.valorAtualizado, 0)
+)
 const contratosAtivos   = computed(() => contracts.filter(c => c.status !== 'cancelado').length)
 const saldoTotal        = computed(() => contracts.reduce((s, c) => s + c.saldoDevedor, 0))
 const acordosAtivos     = computed(() => negotiations.filter(n => n.status === 'em_pagamento').length)

@@ -17,6 +17,13 @@ const contracts = computed(() =>
     return (order[a.status] ?? 3) - (order[b.status] ?? 3)
   })
 )
+
+// Soma valorAtualizado das parcelas vencidas (fonte da verdade)
+function totalVencidoContrato(c) {
+  return c.parcelas
+    .filter(p => p.status === 'vencida')
+    .reduce((s, p) => s + p.valorAtualizado, 0)
+}
 </script>
 
 <template>
@@ -47,7 +54,7 @@ const contracts = computed(() =>
               </div>
               <div v-if="c.parcelasVencidas > 0">
                 <p class="text-gray-500 text-xs">Vencidas</p>
-                <p class="font-semibold text-red-600">{{ c.parcelasVencidas }} parcela(s)</p>
+                <p class="font-semibold text-red-600">{{ c.parcelasVencidas }}x — {{ formatMoney(totalVencidoContrato(c)) }}</p>
               </div>
               <div v-else-if="c.acordoAtivo">
                 <p class="text-gray-500 text-xs">Acordo</p>

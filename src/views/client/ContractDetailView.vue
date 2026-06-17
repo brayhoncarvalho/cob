@@ -17,6 +17,18 @@ const acordoAtivo = computed(() => {
   return flowState.negotiations.find(n => n.id === contract.value.acordoAtivo)
 })
 
+// Valores derivados das parcelas (fonte da verdade)
+const totalVencido = computed(() =>
+  contract.value?.parcelas
+    .filter(p => p.status === 'vencida')
+    .reduce((s, p) => s + p.valorAtualizado, 0) ?? 0
+)
+const jurosMulta = computed(() =>
+  contract.value?.parcelas
+    .filter(p => p.status === 'vencida')
+    .reduce((s, p) => s + (p.juros ?? 0) + (p.multa ?? 0), 0) ?? 0
+)
+
 const showAll = ref(false)
 const parcelasExibidas = computed(() => {
   if (!contract.value) return []
@@ -84,15 +96,19 @@ function parcela_action(p) {
             <p class="font-semibold">{{ contract.parcelasPagas }} pagas / {{ contract.totalParcelas }} total</p>
           </div>
           <div v-if="contract.parcelasVencidas > 0">
-            <p class="text-gray-500 text-xs mb-0.5">Juros acumulados</p>
-            <p class="font-semibold text-red-600">{{ formatMoney(contract.jurosAcumulados) }}</p>
+            <p class="text-gray-500 text-xs mb-0.5">Juros e multa</p>
+            <p class="font-semibold text-red-600">{{ formatMoney(jurosMulta) }}</p>
           </div>
         </div>
 
         <!-- Alerta de atraso -->
         <div v-if="contract.parcelasVencidas > 0" class="alert-danger mt-4">
           <p class="font-semibold text-sm">{{ contract.parcelasVencidas }} parcela(s) vencida(s) — {{ contract.diasAtraso }} dias em atraso</p>
-          <p class="text-xs mt-0.5">Total atualizado: <strong>{{ formatMoney(contract.saldoDevedor) }}</strong> (incluindo juros e multa)</p>
+          <p class="text-xs mt-0.5">
+            Total das vencidas: <strong>{{ formatMoney(totalVencido) }}</strong>
+            <span v-if="jurosMulta > 0"> (sendo <strong>{{ formatMoney(jurosMulta) }}</strong> em juros e multa)</span>
+          </p>
+          <p class="text-xs mt-1 text-red-600/70">Saldo devedor total do contrato: {{ formatMoney(contract.saldoDevedor) }}</p>
         </div>
 
         <!-- Acordo ativo -->

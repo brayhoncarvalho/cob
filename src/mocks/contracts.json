@@ -7,7 +7,7 @@
     "taxaJuros": 2.5,
     "saldoDevedor": 14840,
     "valorOriginalEmAberto": 12500,
-    "jurosAcumulados": 2340,
+    "jurosAcumulados": 162.50,
     "status": "em_atraso",
     "diasAtraso": 33,
     "totalParcelas": 24,
@@ -52,7 +52,7 @@
     "status": "em_dia",
     "diasAtraso": 0,
     "totalParcelas": 36,
-    "parcelasPagas": 12,
+    "parcelasPagas": 13,
     "parcelasVencidas": 0,
     "parcelas": [
       { "numero": 1,  "vencimento": "2025-06-05", "valor": 611.11, "valorAtualizado": 611.11, "status": "paga", "dataPagamento": "2025-06-04" },
