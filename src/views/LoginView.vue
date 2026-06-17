@@ -26,9 +26,9 @@ function onCpfInput(e) {
 const canSubmit = computed(() => cpf.value.length === 14 && senha.value.length >= 6)
 
 const DEMO_USERS = [
-  { label: 'CLIENTE', labelClass: 'bg-blue-500/20 text-blue-300', nome: 'João da Silva', cpf: '123.456.789-00', senha: '123456' },
-  { label: 'MESA 1',  labelClass: 'bg-amber-500/20 text-amber-300', nome: 'Pedro Alves',   cpf: '111.111.111-11', senha: '123456' },
-  { label: 'GERENTE', labelClass: 'bg-purple-500/20 text-purple-300', nome: 'Carlos Mendes', cpf: '222.222.222-22', senha: '123456' },
+  { label: 'CLIENTE', labelClass: 'bg-blue-100 text-blue-700',   nome: 'João da Silva',  cpf: '123.456.789-00', senha: '123456' },
+  { label: 'MESA 1',  labelClass: 'bg-amber-100 text-amber-700', nome: 'Pedro Alves',    cpf: '111.111.111-11', senha: '123456' },
+  { label: 'GERENTE', labelClass: 'bg-purple-100 text-purple-700', nome: 'Carlos Mendes', cpf: '222.222.222-22', senha: '123456' },
 ]
 
 const activeDemo = ref(null)
@@ -150,21 +150,20 @@ async function handleLogin() {
       </div>
 
       <!-- Hint de demo -->
-      <div class="mt-6 bg-gray-800/90 rounded-xl px-4 py-3 text-xs space-y-2">
-        <p class="font-semibold text-gray-300 mb-1">Credenciais de demo — clique para preencher</p>
-        <div class="space-y-1.5">
+      <div class="mt-6 alert-info rounded-xl px-4 py-3 text-xs space-y-2">
+        <p class="font-semibold text-blue-700 mb-1">Demo — clique para preencher</p>
+        <div class="space-y-1">
           <button
             v-for="u in DEMO_USERS"
             :key="u.cpf"
             type="button"
             @click="fillCredentials(u)"
             class="w-full flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors text-left"
-            :class="activeDemo === u.cpf ? 'bg-white/10 ring-1 ring-white/20' : 'hover:bg-white/5'"
+            :class="activeDemo === u.cpf ? 'bg-blue-100/80' : 'hover:bg-blue-50'"
           >
             <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold shrink-0" :class="u.labelClass">{{ u.label }}</span>
-            <span class="text-gray-300 font-medium">{{ u.nome }}</span>
-            <svg v-if="activeDemo === u.cpf" class="ml-auto w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
-            <svg v-else class="ml-auto w-3.5 h-3.5 text-gray-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15"/><path stroke-linecap="round" stroke-linejoin="round" d="M18 12H9m0 0l3-3m-3 3l3 3"/></svg>
+            <span class="text-blue-800">{{ u.nome }}</span>
+            <svg v-if="activeDemo === u.cpf" class="ml-auto w-3.5 h-3.5 text-blue-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
           </button>
         </div>
       </div>
