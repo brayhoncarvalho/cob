@@ -14,6 +14,16 @@ pnpm-debug.log*
 # Local/copilot support files
 copilot-config/
 
+# Arquivos internos do Copilot no .github (não publicar)
+.github/copilot-instructions.md
+.github/instructions/
+.github/agents/
+.github/prompts/
+.github/CODEOWNERS
+.github/pull_request_template.md
+.github/workflows/figma-sync.yml
+.github/workflows/frontend-screenshots.yml
+
 # Product documentation kept fora do versionamento por solicitação
 PRD.md
 readme.md
