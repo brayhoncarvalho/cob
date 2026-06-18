@@ -54,7 +54,7 @@ function goAnalise(id) {
 </script>
 
 <template>
-  <BackofficeLayout title="Fila de Aprovação — 1º Nível">
+  <BackofficeLayout title="Mesa de Crédito">
 
     <!-- Métricas rápidas -->
     <div class="grid grid-cols-3 gap-4 mb-6">

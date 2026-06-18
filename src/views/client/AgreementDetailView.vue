@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
@@ -8,9 +8,40 @@ import { useFlow } from '@/stores/flow.js'
 
 const route = useRoute()
 const { formatMoney, formatDate, formatDateTime } = useFormatters()
-const { state: flowState, markParcelaPaid } = useFlow()
+const router = useRouter()
+const { state: flowState, markParcelaPaid, clientCancelNegotiation } = useFlow()
+
+function cancelarProposta() {
+  clientCancelNegotiation(negotiation.value.id)
+  router.push('/negociacoes')
+}
 
 const negotiation = computed(() => flowState.negotiations.find(n => n.id === route.params.id))
+
+// ── Stepper ───────────────────────────────────────────────────────────────────────────────
+const stepperSteps = [
+  { label: 'Enviada',      icon: 'send' },
+  { label: 'Em Análise',   icon: 'clock' },
+  { label: 'Decisão',      icon: 'gavel' },
+  { label: 'Acordo Ativo', icon: 'check' },
+]
+
+const stepperStep = computed(() => {
+  switch (negotiation.value?.status) {
+    case 'em_pagamento': return 4
+    case 'aprovada':     return 4
+    case 'contraproposta': return 3
+    case 'reprovada':    return 3
+    case 'cancelada':    return 1
+    case 'em_analise':   return 2
+    default:             return 1
+  }
+})
+
+// Indica se o fluxo terminou sem acordo (reprovada/cancelada)
+const stepperFailed = computed(() =>
+  ['reprovada', 'cancelada'].includes(negotiation.value?.status)
+)
 
 // Pagamento com persistência no flow store
 const pagandoIndex = ref(null)
@@ -40,6 +71,62 @@ function copiarPix() {
     <div v-if="!negotiation" class="card text-center py-12 text-gray-500">Negociação não encontrada.</div>
 
     <template v-else>
+
+      <!-- ── STEPPER ──────────────────────────────────────────────────── -->
+      <div class="card mb-5 py-4">
+        <div class="flex items-center justify-between px-2">
+          <template v-for="(step, idx) in stepperSteps" :key="step.label">
+            <div class="flex flex-col items-center gap-1 flex-1">
+              <div
+                class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors"
+                :class="stepperFailed && idx + 1 === stepperStep
+                  ? 'bg-red-500 text-white ring-4 ring-red-100'
+                  : stepperStep > idx + 1
+                    ? 'bg-green-500 text-white'
+                    : stepperStep === idx + 1
+                      ? 'bg-blue-600 text-white ring-4 ring-blue-100'
+                      : 'bg-gray-100 text-gray-400'"
+              >
+                <!-- ícone de falha -->
+                <svg v-if="stepperFailed && idx + 1 === stepperStep" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                <!-- ícone de concluído -->
+                <svg v-else-if="stepperStep > idx + 1" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                <span v-else>{{ idx + 1 }}</span>
+              </div>
+              <span
+                class="text-xs text-center leading-tight"
+                :class="stepperFailed && idx + 1 === stepperStep
+                  ? 'text-red-600 font-semibold'
+                  : stepperStep === idx + 1
+                    ? 'text-blue-700 font-semibold'
+                    : 'text-gray-400'"
+              >{{ step.label }}</span>
+            </div>
+            <!-- linha conectora -->
+            <div
+              v-if="idx < stepperSteps.length - 1"
+              class="h-0.5 flex-1 mx-1 -mt-5"
+              :class="stepperStep > idx + 1 && !stepperFailed ? 'bg-green-400' : 'bg-gray-200'"
+            />
+          </template>
+        </div>
+        <!-- Legenda de status abaixo do stepper -->
+        <p class="text-center text-xs mt-3"
+          :class="negotiation.status === 'em_pagamento' ? 'text-green-600 font-semibold'
+            : negotiation.status === 'em_analise' ? 'text-blue-600'
+            : negotiation.status === 'contraproposta' ? 'text-purple-600 font-semibold'
+            : negotiation.status === 'reprovada' ? 'text-red-500'
+            : negotiation.status === 'cancelada' ? 'text-gray-400'
+            : 'text-gray-500'"
+        >
+          <span v-if="negotiation.status === 'em_analise'">Aguardando análise da Mesa de Crédito</span>
+          <span v-else-if="negotiation.status === 'contraproposta'">A Mesa enviou uma contraproposta — avalie antes do prazo expirar</span>
+          <span v-else-if="negotiation.status === 'em_pagamento'">Acordo ativo — mantenha os pagamentos em dia</span>
+          <span v-else-if="negotiation.status === 'reprovada'">Proposta reprovada</span>
+          <span v-else-if="negotiation.status === 'cancelada'">Proposta cancelada</span>
+        </p>
+
+      </div>
 
       <!-- Header do acordo -->
       <div class="card mb-6">
@@ -73,9 +160,27 @@ function copiarPix() {
           <svg class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
           <span>O não pagamento de qualquer parcela por mais de 10 dias cancela o acordo e restaura o débito original.</span>
         </div>
-        <div v-if="negotiation.status === 'em_analise'" class="alert-info mt-4 text-xs flex items-start gap-1.5">
-          <svg class="w-4 h-4 text-blue-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <span>Sua proposta está sendo avaliada pela Mesa de Crédito. Prazo: {{ formatDateTime(negotiation.prazoResposta) }}.</span>
+        <div v-if="negotiation.status === 'em_analise'" class="alert-info mt-4 text-xs flex items-start justify-between gap-3">
+          <div class="flex items-start gap-1.5">
+            <svg class="w-4 h-4 text-blue-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>Sua proposta está sendo avaliada pela Mesa de Crédito. Prazo: {{ formatDateTime(negotiation.prazoResposta) }}.</span>
+          </div>
+          <button
+            type="button"
+            @click="cancelarProposta"
+            class="shrink-0 btn-danger text-xs py-1 px-3"
+          >Cancelar proposta</button>
+        </div>
+        <div v-if="negotiation.status === 'contraproposta'" class="mt-4 rounded-xl bg-purple-50 border border-purple-200 px-4 py-3 text-xs flex items-start justify-between gap-3">
+          <div class="flex items-start gap-1.5">
+            <svg class="w-4 h-4 text-purple-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
+            <span class="text-purple-800">A Mesa de Crédito enviou uma contraproposta. Avalie as novas condições antes do prazo.</span>
+          </div>
+          <button
+            type="button"
+            @click="cancelarProposta"
+            class="shrink-0 btn-danger text-xs py-1 px-3"
+          >Cancelar proposta</button>
         </div>
         <div v-if="negotiation.status === 'reprovada'" class="alert-danger mt-4 text-xs flex items-start gap-1.5">
           <svg class="w-4 h-4 text-red-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>

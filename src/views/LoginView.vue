@@ -27,7 +27,7 @@ const canSubmit = computed(() => cpf.value.length === 14 && senha.value.length >
 
 const DEMO_USERS = [
   { label: 'CLIENTE',     labelClass: 'bg-blue-100 text-blue-700',   nome: 'João da Silva',  cpf: '123.456.789-00', senha: 'Dock@2026' },
-  { label: 'MESA 1',      labelClass: 'bg-amber-100 text-amber-700', nome: 'Pedro Alves',    cpf: '111.111.111-11', senha: 'Dock@2026' },
+  { label: 'MESA',      labelClass: 'bg-amber-100 text-amber-700', nome: 'Pedro Alves',    cpf: '111.111.111-11', senha: 'Dock@2026' },
   { label: 'GERENTE',     labelClass: 'bg-purple-100 text-purple-700', nome: 'Carlos Mendes', cpf: '222.222.222-22', senha: 'Dock@2026' },
   { label: 'ATENDIMENTO', labelClass: 'bg-teal-100 text-teal-700',   nome: 'Mariana Lima',   cpf: '444.444.444-44', senha: 'Dock@2026' },
 ]
@@ -52,9 +52,10 @@ async function handleLogin() {
   const result = login(cpf.value, senha.value)
 
   if (result.success) {
-    if (result.role === 'client')  router.push('/dashboard')
-    else if (result.role === 'analyst') router.push('/backoffice/fila')
-    else if (result.role === 'manager') router.push('/backoffice/gerente')
+    if (result.role === 'client')    router.push('/dashboard')
+    else if (result.role === 'analyst')   router.push('/backoffice/fila')
+    else if (result.role === 'manager')   router.push('/backoffice/gerente')
+    else if (result.role === 'attendant') router.push('/atendimento')
   } else {
     errorMsg.value = 'CPF ou senha incorretos. Verifique e tente novamente.'
     loading.value = false
@@ -150,9 +151,9 @@ async function handleLogin() {
         </form>
       </div>
 
-      <!-- Hint de demo -->
+      <!-- Acesso rápido -->
       <div class="mt-6 alert-info rounded-xl px-4 py-3 text-xs">
-        <p class="font-semibold text-blue-700 mb-2">Demo — clique para preencher</p>
+        <p class="font-semibold text-blue-700 mb-2">Acesso rápido</p>
         <div class="grid grid-cols-2 gap-2">
           <button
             v-for="u in DEMO_USERS"

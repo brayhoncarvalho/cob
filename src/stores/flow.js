@@ -56,7 +56,7 @@ const state = reactive(loadState() ?? freshState())
 
 /**
  * Submete uma proposta nova do cliente.
- * proposalStatus: 'auto' | 'mesa1' | 'mesa2'
+ * proposalStatus: 'auto' | 'mesa' | 'mesa2'
  */
 function submitProposal({ id, contratoId, entrada, numParcelas, valorParcela,
                           totalAcordo, desconto, proposalStatus }) {
@@ -72,7 +72,7 @@ function submitProposal({ id, contratoId, entrada, numParcelas, valorParcela,
   const neg = {
     id,
     status:        isAuto ? 'em_pagamento' : 'em_analise',
-    nivel:         1, // sempre começa na mesa 1 — analista decide se escala
+    nivel:         1, // sempre começa na mesa — analista decide se escala
     contratoId,
     dataEnvio:     new Date().toISOString(),
     prazoResposta: new Date(Date.now() + 24 * 3600000).toISOString(), // 24h sempre
@@ -204,7 +204,7 @@ function submitAttendantProposal({ id, contratoId, clienteCpf, entrada, numParce
 function clientApproveProposal(id) {
   const neg = state.negotiations.find(n => n.id === id)
   if (!neg) return
-  // Segue o fluxo normal: vai para análise (mesa1) ou auto-aprovação baseada nas regras
+  // Segue o fluxo normal: vai para análise (mesa) ou auto-aprovação baseada nas regras
   // Por simplicidade no demo: vai para em_pagamento direto (acordo iniciado)
   neg.status        = 'em_pagamento'
   neg.dataAprovacao = new Date().toISOString()
@@ -218,6 +218,24 @@ function clientRejectProposal(id) {
   const neg = state.negotiations.find(n => n.id === id)
   if (!neg) return
   neg.status = 'cancelada'
+  persist()
+}
+
+/** Cliente cancela proposta que ainda está em análise */
+function clientCancelNegotiation(id) {
+  const neg = state.negotiations.find(n => n.id === id)
+  if (!neg || !['em_analise', 'contraproposta'].includes(neg.status)) return
+  neg.status = 'cancelada'
+  neg.dataCancelamento = new Date().toISOString()
+  persist()
+}
+
+/** Atendente cancela proposta pendente de aprovação do cliente */
+function cancelAttendantProposal(id) {
+  const neg = state.negotiations.find(n => n.id === id)
+  if (!neg) return
+  neg.status = 'cancelada'
+  neg.dataCancelamento = new Date().toISOString()
   persist()
 }
 
@@ -248,5 +266,7 @@ export function useFlow() {
     submitAttendantProposal,
     clientApproveProposal,
     clientRejectProposal,
+    cancelAttendantProposal,
+    clientCancelNegotiation,
   }
 }

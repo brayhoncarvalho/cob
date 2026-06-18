@@ -36,7 +36,7 @@ const contrapropostaReal = computed(() =>
 const stepperStep = computed(() => {
   switch (scenario.value) {
     case 'auto':         return 4 // Acordo Ativo
-    case 'mesa1':        return 2 // Em Análise
+    case 'mesa':        return 2 // Em Análise
     case 'contraproposta': return 3 // Decisão
     case 'reprovada':    return 3
     default:             return 1
@@ -155,7 +155,7 @@ function handleAcceptCounter() {
         </template>
 
         <!-- ===== CENÁRIO 2: EM ANÁLISE ===== -->
-        <template v-else-if="scenario === 'mesa1'">
+        <template v-else-if="scenario === 'mesa'">
           <div class="card text-center py-8 mb-6">
             <div class="flex justify-center mb-4">
               <svg class="w-14 h-14 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>

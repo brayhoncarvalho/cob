@@ -17,9 +17,20 @@ const contract = computed(() => flowState.contracts.find(c => c.id === neg.value
 
 const decisao   = ref(null)
 const motivo    = ref('')
+const contraEntrada  = ref('')
+const contraParcelas = ref('')
 const loading   = ref(false)
 const done      = ref(false)
 const doneMsg   = ref('')
+
+// Parcela calculada automaticamente
+const contraValorParc = computed(() => {
+  const total = neg.value?.totalAcordo ?? 0
+  const ent   = Number(contraEntrada.value) || 0
+  const np    = Number(contraParcelas.value) || 1
+  const v = Math.max(0, (total - ent) / np)
+  return v > 0 ? Math.round(v * 100) / 100 : 0
+})
 
 // Análise automática com regras liberadas no 2º Nível
 const analise = computed(() => {
@@ -49,9 +60,9 @@ async function confirmar() {
   } else if (decisao.value === 'contraproposta') {
     counterNegotiation(id, {
       motivo: motivo.value,
-      entrada: undefined,
-      numParcelas: undefined,
-      valorParcela: undefined,
+      entrada: contraEntrada.value,
+      numParcelas: contraParcelas.value,
+      valorParcela: contraValorParc.value,
     })
   }
 
@@ -61,9 +72,9 @@ async function confirmar() {
 
 <template>
   <BackofficeLayout
-    :title="`2º Nível — ${route.params.id}`"
+    :title="`Análise — ${route.params.id}`"
     back-to="/backoffice/gerente"
-    back-label="Dashboard Gerencial"
+    back-label="Gestão de Crédito"
   >
     <div v-if="!neg" class="bg-white rounded-xl p-8 text-center text-gray-500">Proposta não encontrada.</div>
 
@@ -86,7 +97,7 @@ async function confirmar() {
         <div class="xl:col-span-2 space-y-4">
           <!-- Dados da proposta -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 class="font-semibold text-gray-900 mb-3">Proposta escalada do 1º Nível</h3>
+            <h3 class="font-semibold text-gray-900 mb-3">Detalhes da proposta</h3>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
               <div><p class="text-xs text-gray-400">Protocolo</p><p class="font-mono font-semibold">{{ neg.id }}</p></div>
               <div><p class="text-xs text-gray-400">Contrato</p><p class="font-semibold">#{{ neg.contratoId }}</p></div>
@@ -115,7 +126,7 @@ async function confirmar() {
         <!-- Decisão -->
         <div>
           <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 class="font-semibold text-gray-900 mb-4">Decisão — 2º Nível</h3>
+            <h3 class="font-semibold text-gray-900 mb-4">Decisão</h3>
             <div class="space-y-2 mb-4">
               <button
                 v-for="d in [{ key: 'aprovar', label: 'Aprovar', cls: 'border-green-300 bg-green-50 text-green-700', iconPath: 'M4.5 12.75l6 6 9-13.5' },
@@ -138,6 +149,28 @@ async function confirmar() {
                 placeholder="Justificativa da decisão..."
                 class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+
+            <!-- Campos contraproposta -->
+            <div v-if="decisao === 'contraproposta'" class="space-y-3 mb-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Nova entrada (R$)</label>
+                <input v-model="contraEntrada" type="number" placeholder="0,00" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Nº parcelas</label>
+                <input v-model="contraParcelas" type="number" min="1" max="24" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <!-- Valor parcela calculado automaticamente -->
+              <div class="rounded-lg bg-purple-50 border border-purple-200 px-3 py-2">
+                <p class="text-xs text-purple-600 mb-0.5">Valor da parcela (calculado)</p>
+                <p class="font-bold text-purple-800 text-sm">
+                  {{ contraValorParc > 0 ? formatMoney(contraValorParc) : '—' }}
+                </p>
+                <p class="text-xs text-purple-400 mt-0.5">
+                  Total: {{ formatMoney(neg.totalAcordo) }} − Entrada: {{ formatMoney(Number(contraEntrada) || 0) }} ÷ {{ contraParcelas || '?' }}x
+                </p>
+              </div>
             </div>
 
             <button

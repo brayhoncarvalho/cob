@@ -8,7 +8,7 @@ import { useFlow } from '@/stores/flow.js'
 
 const router = useRouter()
 const { formatMoney, formatDate, formatDateTime } = useFormatters()
-const { state: flowState } = useFlow()
+const { state: flowState, clientCancelNegotiation } = useFlow()
 
 // Ordenar: em análise primeiro, depois por data desc
 const negotiations = computed(() =>
@@ -115,6 +115,16 @@ function goAction(n) {
             >
               {{ actionLabel[n.status] ?? 'Ver' }}
             </span>
+            <!-- Cancelar proposta em análise ou contraproposta -->
+            <button
+              v-if="['em_analise', 'contraproposta'].includes(n.status)"
+              type="button"
+              class="text-xs text-red-500 hover:text-red-700 font-medium mt-1 flex items-center gap-1"
+              @click.stop="clientCancelNegotiation(n.id)"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              Cancelar
+            </button>
           </div>
         </div>
       </div>

@@ -55,10 +55,18 @@ const decisao      = ref(null) // 'aprovar' | 'reprovar' | 'contraproposta' | 'e
 const motivo       = ref('')
 const contraEntrada   = ref('')
 const contraParcelas  = ref('')
-const contraValorParc = ref('')
 const loading      = ref(false)
 const done         = ref(false)
 const doneMsg      = ref('')
+
+// Parcela calculada automaticamente: (totalAcordo - entrada) / numParcelas
+const contraValorParc = computed(() => {
+  const total = neg.value?.totalAcordo ?? 0
+  const ent   = Number(contraEntrada.value) || 0
+  const np    = Number(contraParcelas.value) || 1
+  const v = Math.max(0, (total - ent) / np)
+  return v > 0 ? Math.round(v * 100) / 100 : 0
+})
 
 const precisaEscalar = computed(() =>
   contract.value?.saldoDevedor > rules.alcada1NivelMax
@@ -245,15 +253,19 @@ async function confirmar() {
                 <label class="block text-xs font-medium text-gray-700 mb-1">Nova entrada (R$)</label>
                 <input v-model="contraEntrada" type="number" placeholder="0,00" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-xs font-medium text-gray-700 mb-1">Nº parcelas</label>
-                  <input v-model="contraParcelas" type="number" min="1" max="24" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-gray-700 mb-1">Valor parcela</label>
-                  <input v-model="contraValorParc" type="number" placeholder="0,00" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Nº parcelas</label>
+                <input v-model="contraParcelas" type="number" min="1" max="24" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <!-- Valor parcela calculado automaticamente -->
+              <div class="rounded-lg bg-purple-50 border border-purple-200 px-3 py-2">
+                <p class="text-xs text-purple-600 mb-0.5">Valor da parcela (calculado)</p>
+                <p class="font-bold text-purple-800 text-sm">
+                  {{ contraValorParc > 0 ? formatMoney(contraValorParc) : '—' }}
+                </p>
+                <p class="text-xs text-purple-400 mt-0.5">
+                  Total: {{ formatMoney(neg.totalAcordo) }} − Entrada: {{ formatMoney(Number(contraEntrada) || 0) }} ÷ {{ contraParcelas || '?' }}x
+                </p>
               </div>
             </div>
 

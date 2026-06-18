@@ -3,7 +3,7 @@ import { reactive, readonly } from 'vue'
 const state = reactive({
   // Proposta montada no simulador
   proposal: null,
-  // Resultado retornado (auto | mesa1 | mesa2 | blocked | contraproposta)
+  // Resultado retornado (auto | mesa | mesa2 | blocked | contraproposta)
   result: null,
   // Dados do contrato no momento da negociação
   contractSnapshot: null,

@@ -55,6 +55,11 @@ const numParcelas     = ref(6)
 const diaVencimento   = ref(5)
 const valorParcelaInput = ref(0) // usado no modo 'parcela'
 
+// Parcela máxima possível: totalAcordo / numParcelas (entrada = 0)
+const maxParcelaInput = computed(() =>
+  numParcelas.value > 0 ? Math.floor(totalAcordo.value / numParcelas.value) : 0
+)
+
 // Cálculos em tempo real
 const valorParcela = computed(() => {
   if (modoCalculo.value === 'parcela') return valorParcelaInput.value
@@ -81,17 +86,41 @@ function onModoCalculo(modo) {
   modoCalculo.value = modo
   if (modo === 'parcela') {
     const restante = Math.max(0, totalAcordo.value - entrada.value)
-    valorParcelaInput.value = numParcelas.value > 0 ? Math.ceil(restante / numParcelas.value) : 0
+    valorParcelaInput.value = numParcelas.value > 0 ? Math.round((restante / numParcelas.value) * 100) / 100 : 0
   } else {
     // volta entrada para o minimo
     entrada.value = Math.ceil(minEntrada.value)
   }
 }
 
-// Parcela mínima: quando muda escopo, re-trava mínimo
+// Reinicia ao trocar escopo
 watch(() => modoEscopo.value, () => {
   entrada.value = Math.ceil(minEntrada.value)
+  valorParcelaInput.value = 0
+  numParcelas.value = 6
 })
+
+// ── Bidirecionalidade parcela ↔ numParcelas (modo 'parcela') ─────────────────
+let _syncingParcela = false
+
+// Digitar parcela → ajusta slider de parcelas
+watch(valorParcelaInput, (val) => {
+  if (modoCalculo.value !== 'parcela' || _syncingParcela || val <= 0) return
+  const n = Math.min(24, Math.max(1, Math.floor(totalAcordo.value / val)))
+  if (n !== numParcelas.value) {
+    _syncingParcela = true
+    numParcelas.value = n
+    _syncingParcela = false
+  }
+}, { flush: 'sync' })
+
+// Mover slider → atualiza valor da parcela
+watch(numParcelas, () => {
+  if (modoCalculo.value !== 'parcela' || _syncingParcela) return
+  _syncingParcela = true
+  valorParcelaInput.value = maxParcelaInput.value
+  _syncingParcela = false
+}, { flush: 'sync' })
 
 // Próxima data de vencimento do dia selecionado
 const primeiroBoleto = computed(() => {
@@ -103,6 +132,8 @@ const primeiroBoleto = computed(() => {
 
 // Status da proposta
 const proposalStatus = computed(() => {
+  if (modoCalculo.value === 'parcela' && valorParcelaInput.value > maxParcelaInput.value)
+                                                        return 'blocked_max_parcela'
   if (entradaEfetiva.value <= 0)                       return 'blocked_zero'
   if (valorParcela.value < rules.parcelaMinimaValor)    return 'blocked_parcela'
   if (descontoReais.value > totalDue.value * 0.30)      return 'blocked_desconto'
@@ -115,16 +146,17 @@ const proposalStatus = computed(() => {
     totalDue.value <= rules.valorMaxAutoAprovacao
 
   if (autoOk) return 'auto'
-  return 'mesa1' // sempre mesa 1 — analista decide se escala internamente
+  return 'mesa' // sempre mesa — analista decide se escala internamente
 })
 
 const statusConfig = computed(() => ({
-  auto:             { icon: 'success', label: 'Elegível para aprovação imediata!', cls: 'alert-success' },
-  mesa1:            { icon: 'warning', label: 'Proposta será analisada pela Mesa de Crédito — retorno em até 24h úteis.', cls: 'alert-warning' },
-  blocked_zero:     { icon: 'blocked', label: 'Entrada obrigatória. Informe um valor maior que zero.', cls: 'alert-danger' },
-  blocked_parcela:  { icon: 'blocked', label: `Parcela mínima: ${formatMoney(rules.parcelaMinimaValor)}. Reduza o número de parcelas.`, cls: 'alert-danger' },
-  blocked_desconto: { icon: 'blocked', label: 'Desconto excede o máximo permitido para seu atraso. Aumente a entrada.', cls: 'alert-danger' },
-  blocked_acordo:   { icon: 'blocked', label: 'Você já possui um acordo ativo neste contrato.', cls: 'alert-danger' },
+  auto:               { icon: 'success', label: 'Elegível para aprovação imediata!', cls: 'alert-success' },
+  mesa:               { icon: 'warning', label: 'Proposta será analisada pela Mesa de Crédito — retorno em até 24h úteis.', cls: 'alert-warning' },
+  blocked_zero:       { icon: 'blocked', label: 'Entrada obrigatória. Informe um valor maior que zero.', cls: 'alert-danger' },
+  blocked_parcela:    { icon: 'blocked', label: `Parcela mínima: ${formatMoney(rules.parcelaMinimaValor)}. Reduza o número de parcelas.`, cls: 'alert-danger' },
+  blocked_max_parcela:{ icon: 'blocked', label: `Com ${numParcelas.value}x, a parcela máxima é ${formatMoney(maxParcelaInput.value)}. Reduza o valor ou aumente as parcelas.`, cls: 'alert-danger' },
+  blocked_desconto:   { icon: 'blocked', label: 'Desconto excede o máximo permitido para seu atraso. Aumente a entrada.', cls: 'alert-danger' },
+  blocked_acordo:     { icon: 'blocked', label: 'Você já possui um acordo ativo neste contrato.', cls: 'alert-danger' },
 }[proposalStatus.value] ?? { icon: '', label: '', cls: '' }))
 
 const canSubmit = computed(() => !proposalStatus.value.startsWith('blocked'))
@@ -272,14 +304,19 @@ function submit() {
                   v-model.number="valorParcelaInput"
                   type="number"
                   :min="rules.parcelaMinimaValor"
+                  :max="maxParcelaInput"
                   step="50"
                   class="input-field pl-10"
                   placeholder="0,00"
                 />
               </div>
-              <p class="text-xs text-gray-400 mt-1">
-                Entrada calculada automaticamente: <span class="font-semibold text-gray-700">{{ formatMoney(entradaCalculada) }}</span>
-                ({{ (entradaPct * 100).toFixed(0) }}% do total)
+              <p class="text-xs mt-1 text-gray-400">
+                Máximo com {{ numParcelas }}x:
+                <span class="font-semibold" :class="valorParcelaInput > maxParcelaInput ? 'text-red-600' : 'text-gray-700'">
+                  {{ formatMoney(maxParcelaInput) }}
+                </span>
+                · Entrada calculada:
+                <span class="font-semibold text-gray-700">{{ formatMoney(entradaCalculada) }}</span>
               </p>
             </div>
 
@@ -364,25 +401,6 @@ function submit() {
             <div v-if="descontoReais > 0" class="bg-green-100 text-green-800 rounded-xl p-3 text-center font-semibold text-sm flex items-center justify-center gap-1.5">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/></svg>
               Desconto: {{ formatMoney(descontoReais) }} ({{ (descontoPct * 100).toFixed(0) }}%)
-            </div>
-          </div>
-
-          <!-- Comparação (persuasão) -->
-          <div class="card">
-            <h4 class="font-semibold text-gray-800 mb-3 text-sm">Comparação</h4>
-            <div class="space-y-2">
-              <div class="flex justify-between items-center p-2 rounded-lg bg-red-50">
-                <span class="text-xs text-red-700">Sem acordo (e juros subindo)</span>
-                <span class="font-bold text-red-700 text-sm">{{ formatMoney(totalDue) }}</span>
-              </div>
-              <div class="flex justify-between items-center p-2 rounded-lg bg-green-50">
-                <span class="text-xs text-green-700">Com acordo (valor congelado)</span>
-                <span class="font-bold text-green-700 text-sm">{{ formatMoney(totalAcordo) }}</span>
-              </div>
-              <div v-if="descontoReais > 0" class="text-center text-xs font-semibold text-green-700 py-1 flex items-center justify-center gap-1">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
-                Você economiza {{ formatMoney(descontoReais) }}
-              </div>
             </div>
           </div>
 

@@ -30,7 +30,7 @@ const txRecuperacao     = 67 // % mockado
 </script>
 
 <template>
-  <BackofficeLayout title="Dashboard Gerencial — 2º Nível">
+  <BackofficeLayout title="Gestão de Crédito">
 
     <!-- Métricas -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -52,7 +52,7 @@ const txRecuperacao     = 67 // % mockado
       </div>
     </div>
 
-    <!-- Fila do 2º Nível -->
+    <!-- Propostas para análise gerencial -->
     <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6">
       <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
         <h2 class="font-semibold text-gray-900">Propostas escaladas para análise gerencial</h2>
