@@ -44,6 +44,11 @@ const notificacoes = computed(() => {
   )
   return items.slice(0, 5)
 })
+
+// Propostas do atendente aguardando aprovação do cliente
+const propostasAtendente = computed(() =>
+  negotiations.filter(n => n.status === 'pending_client_approval')
+)
 </script>
 
 <template>
@@ -60,6 +65,30 @@ const notificacoes = computed(() => {
       <div class="flex gap-2 shrink-0">
         <RouterLink to="/contratos" class="btn-danger text-sm py-2 px-4">Pagar Agora</RouterLink>
       </div>
+    </div>
+
+    <!-- Banner: proposta do atendente aguardando aprovação -->
+    <div
+      v-for="p in propostasAtendente"
+      :key="p.id"
+      class="mb-4 rounded-xl bg-gradient-to-r from-teal-500 to-teal-700 text-white p-4 shadow-lg flex items-center justify-between gap-4"
+    >
+      <div class="flex items-start gap-3">
+        <div class="text-2xl mt-0.5">📋</div>
+        <div>
+          <p class="font-bold text-sm">Oferta especial do atendente!</p>
+          <p class="text-xs text-teal-100 mt-0.5">
+            Nosso atendente preparou uma proposta de acordo para o contrato #{{ p.contratoId }}.
+            Revise e decida se aceita.
+          </p>
+        </div>
+      </div>
+      <RouterLink
+        :to="`/proposta/aprovar/${p.id}`"
+        class="shrink-0 bg-white text-teal-700 font-bold text-sm px-4 py-2 rounded-lg hover:bg-teal-50 transition whitespace-nowrap"
+      >
+        Ver oferta
+      </RouterLink>
     </div>
 
     <!-- Saudação -->

@@ -72,10 +72,10 @@ function submitProposal({ id, contratoId, entrada, numParcelas, valorParcela,
   const neg = {
     id,
     status:        isAuto ? 'em_pagamento' : 'em_analise',
-    nivel,
+    nivel:         1, // sempre começa na mesa 1 — analista decide se escala
     contratoId,
     dataEnvio:     new Date().toISOString(),
-    prazoResposta: new Date(Date.now() + (nivel === 2 ? 24 : 4) * 3600000).toISOString(),
+    prazoResposta: new Date(Date.now() + 24 * 3600000).toISOString(), // 24h sempre
     entrada,
     numParcelas,
     valorParcela,
@@ -172,6 +172,55 @@ function resetFlow() {
   localStorage.removeItem(STORAGE_KEY)
 }
 
+/**
+ * Atendente simula proposta em nome do cliente.
+ * A proposta fica com status 'pending_client_approval' até o cliente aceitar/rejeitar.
+ */
+function submitAttendantProposal({ id, contratoId, clienteCpf, entrada, numParcelas, valorParcela,
+                                   totalAcordo, desconto, atendenteCpf }) {
+  state.negotiations = state.negotiations.filter(n =>
+    n.contratoId !== contratoId || !['em_analise', 'contraproposta', 'pending_client_approval'].includes(n.status)
+  )
+  state.negotiations.push({
+    id,
+    status:              'pending_client_approval',
+    nivel:               0,
+    contratoId,
+    clienteCpf,
+    simuladoPorAtendente: atendenteCpf,
+    dataEnvio:           new Date().toISOString(),
+    prazoResposta:       new Date(Date.now() + 48 * 3600000).toISOString(),
+    entrada:             Number(entrada),
+    numParcelas:         Number(numParcelas),
+    valorParcela:        Number(valorParcela),
+    totalAcordo:         Number(totalAcordo),
+    desconto:            Number(desconto),
+    parcelas:            [],
+  })
+  persist()
+}
+
+/** Cliente aprova proposta sugerida pelo atendente */
+function clientApproveProposal(id) {
+  const neg = state.negotiations.find(n => n.id === id)
+  if (!neg) return
+  // Segue o fluxo normal: vai para análise (mesa1) ou auto-aprovação baseada nas regras
+  // Por simplicidade no demo: vai para em_pagamento direto (acordo iniciado)
+  neg.status        = 'em_pagamento'
+  neg.dataAprovacao = new Date().toISOString()
+  neg.parcelas      = _buildParcelas(neg)
+  _activateContract(neg.contratoId, id)
+  persist()
+}
+
+/** Cliente rejeita proposta sugerida pelo atendente */
+function clientRejectProposal(id) {
+  const neg = state.negotiations.find(n => n.id === id)
+  if (!neg) return
+  neg.status = 'cancelada'
+  persist()
+}
+
 // ── private ───────────────────────────────────────────────────────────────────
 
 function _activateContract(contratoId, negId) {
@@ -196,5 +245,8 @@ export function useFlow() {
     acceptCounter,
     markParcelaPaid,
     resetFlow,
+    submitAttendantProposal,
+    clientApproveProposal,
+    clientRejectProposal,
   }
 }

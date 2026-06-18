@@ -19,6 +19,10 @@ const ManagerDashboardView = () => import('@/views/backoffice/ManagerDashboardVi
 const ManagerAnalysisView  = () => import('@/views/backoffice/ManagerAnalysisView.vue')
 const ParametrosView       = () => import('@/views/backoffice/ParametrosView.vue')
 
+const AttendanceDashboardView    = () => import('@/views/attendance/AttendanceDashboardView.vue')
+const AttendanceNegotiationView  = () => import('@/views/attendance/AttendanceNegotiationView.vue')
+const ProposalApprovalView       = () => import('@/views/client/ProposalApprovalView.vue')
+
 const routes = [
   { path: '/', redirect: '/login' },
 
@@ -33,6 +37,7 @@ const routes = [
   { path: '/contratos/:id/antecipar',        component: AnticipationView,    meta: { requiresAuth: true, role: 'client' } },
   { path: '/contratos/:id/negociar',         component: NegotiationView,     meta: { requiresAuth: true, role: 'client' } },
   { path: '/proposta/resultado',             component: ProposalResultView,  meta: { requiresAuth: true, role: 'client' } },
+  { path: '/proposta/aprovar/:id',           component: ProposalApprovalView, meta: { requiresAuth: true, role: 'client' } },
   { path: '/negociacoes',                    component: MyNegotiationsView,  meta: { requiresAuth: true, role: 'client' } },
   { path: '/negociacoes/:id',                component: AgreementDetailView, meta: { requiresAuth: true, role: 'client' } },
 
@@ -44,6 +49,10 @@ const routes = [
   { path: '/backoffice/gerente',             component: ManagerDashboardView, meta: { requiresAuth: true, role: 'manager' } },
   { path: '/backoffice/gerente/proposta/:id',component: ManagerAnalysisView,  meta: { requiresAuth: true, role: 'manager' } },
   { path: '/backoffice/gerente/parametros',   component: ParametrosView,       meta: { requiresAuth: true, role: 'manager' } },
+
+  // Atendimento
+  { path: '/atendimento',                              component: AttendanceDashboardView,   meta: { requiresAuth: true, role: 'attendant' } },
+  { path: '/atendimento/cliente/:clienteId/negociar',  component: AttendanceNegotiationView, meta: { requiresAuth: true, role: 'attendant' } },
 
   // Fallback
   { path: '/:pathMatch(.*)*', redirect: '/login' },
@@ -79,8 +88,9 @@ router.beforeEach((to, _from, next) => {
 })
 
 function roleHome(role) {
-  if (role === 'analyst')  return '/backoffice/fila'
-  if (role === 'manager')  return '/backoffice/gerente'
+  if (role === 'analyst')   return '/backoffice/fila'
+  if (role === 'manager')   return '/backoffice/gerente'
+  if (role === 'attendant') return '/atendimento'
   return '/dashboard'
 }
 

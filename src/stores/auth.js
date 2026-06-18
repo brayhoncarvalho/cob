@@ -1,9 +1,10 @@
 import { reactive, readonly } from 'vue'
 
 const MOCK_USERS = {
-  '123.456.789-00': { senha: '123456', role: 'client',   nome: 'João da Silva',   cpf: '123.456.789-00' },
-  '111.111.111-11': { senha: '123456', role: 'analyst',  nome: 'Pedro Alves',     cpf: '111.111.111-11' },
-  '222.222.222-22': { senha: '123456', role: 'manager',  nome: 'Carlos Mendes',   cpf: '222.222.222-22' },
+  '123.456.789-00': { senha: 'Dock@2026', role: 'client',     nome: 'João da Silva',   cpf: '123.456.789-00' },
+  '111.111.111-11': { senha: 'Dock@2026', role: 'analyst',    nome: 'Pedro Alves',     cpf: '111.111.111-11' },
+  '222.222.222-22': { senha: 'Dock@2026', role: 'manager',    nome: 'Carlos Mendes',   cpf: '222.222.222-22' },
+  '444.444.444-44': { senha: 'Dock@2026', role: 'attendant',  nome: 'Mariana Lima',    cpf: '444.444.444-44' },
 }
 
 const state = reactive({

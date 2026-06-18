@@ -26,9 +26,10 @@ function onCpfInput(e) {
 const canSubmit = computed(() => cpf.value.length === 14 && senha.value.length >= 6)
 
 const DEMO_USERS = [
-  { label: 'CLIENTE', labelClass: 'bg-blue-100 text-blue-700',   nome: 'João da Silva',  cpf: '123.456.789-00', senha: '123456' },
-  { label: 'MESA 1',  labelClass: 'bg-amber-100 text-amber-700', nome: 'Pedro Alves',    cpf: '111.111.111-11', senha: '123456' },
-  { label: 'GERENTE', labelClass: 'bg-purple-100 text-purple-700', nome: 'Carlos Mendes', cpf: '222.222.222-22', senha: '123456' },
+  { label: 'CLIENTE',     labelClass: 'bg-blue-100 text-blue-700',   nome: 'João da Silva',  cpf: '123.456.789-00', senha: 'Dock@2026' },
+  { label: 'MESA 1',      labelClass: 'bg-amber-100 text-amber-700', nome: 'Pedro Alves',    cpf: '111.111.111-11', senha: 'Dock@2026' },
+  { label: 'GERENTE',     labelClass: 'bg-purple-100 text-purple-700', nome: 'Carlos Mendes', cpf: '222.222.222-22', senha: 'Dock@2026' },
+  { label: 'ATENDIMENTO', labelClass: 'bg-teal-100 text-teal-700',   nome: 'Mariana Lima',   cpf: '444.444.444-44', senha: 'Dock@2026' },
 ]
 
 const activeDemo = ref(null)
@@ -152,7 +153,7 @@ async function handleLogin() {
       <!-- Hint de demo -->
       <div class="mt-6 alert-info rounded-xl px-4 py-3 text-xs">
         <p class="font-semibold text-blue-700 mb-2">Demo — clique para preencher</p>
-        <div class="grid grid-cols-3 gap-2">
+        <div class="grid grid-cols-2 gap-2">
           <button
             v-for="u in DEMO_USERS"
             :key="u.cpf"

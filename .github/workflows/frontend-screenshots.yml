@@ -1,0 +1,81 @@
+# ============================================================
+# Frontend Screenshots — Pipeline Automatizado
+# ============================================================
+# Gera screenshots oficiais do frontend em 3 viewports e publica
+# como artefato de CI para design review e documentação viva.
+# ============================================================
+
+name: Frontend Screenshots
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [develop, master]
+    paths:
+      - 'Teste/src/**'
+      - 'Teste/public/**'
+      - 'Teste/index.html'
+      - 'Teste/package.json'
+      - 'Teste/vite.config.ts'
+      - 'Teste/scripts/screenshots.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: Teste/package-lock.json
+
+      - name: Install dependencies
+        working-directory: Teste
+        run: npm ci --ignore-scripts
+
+      - name: Install Playwright browser
+        working-directory: Teste
+        run: npx playwright install chromium
+
+      - name: Build frontend
+        working-directory: Teste
+        run: npm run build
+
+      - name: Start preview server
+        working-directory: Teste
+        run: |
+          nohup npm run preview -- --host 127.0.0.1 --port 4173 > preview.log 2>&1 &
+
+      - name: Wait for preview server
+        run: |
+          for i in {1..30}; do
+            if curl --silent --fail http://127.0.0.1:4173 > /dev/null; then
+              echo "Preview server ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Preview server did not start in time"
+          exit 1
+
+      - name: Generate screenshots
+        working-directory: Teste
+        run: npm run screenshots:ci
+
+      - name: Upload screenshots artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-screenshots
+          path: |
+            Teste/screenshots/**
+            Teste/preview.log
+          if-no-files-found: error

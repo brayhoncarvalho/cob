@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
@@ -16,7 +16,20 @@ const { rules } = useRules()
 
 const contract = computed(() => flowState.contracts.find(c => c.id === route.params.id))
 
-// Desconto máximo pela faixa de atraso
+// ── Modo: escopo da negociação ────────────────────────────────────────────────
+// 'debito'    = apenas parcelas vencidas
+// 'contrato'  = saldo devedor completo (padrão)
+const modoEscopo = ref('contrato')
+
+const totalDueDebito = computed(() =>
+  contract.value?.parcelas.filter(p => p.status === 'vencida').reduce((s, p) => s + p.valorAtualizado, 0) ?? 0
+)
+
+const totalDue = computed(() =>
+  modoEscopo.value === 'debito' ? totalDueDebito.value : (contract.value?.saldoDevedor ?? 0)
+)
+
+// ── Desconto pré-aprovado por faixa de atraso ─────────────────────────────────
 const descontoPct = computed(() => {
   const d = contract.value?.diasAtraso ?? 0
   const f = rules.descontoMaxPorFaixa
@@ -27,21 +40,58 @@ const descontoPct = computed(() => {
   return f['120+']
 })
 
-const totalDue       = computed(() => contract.value?.saldoDevedor ?? 0)
-const totalAcordo    = computed(() => totalDue.value * (1 - descontoPct.value))
-const desconto       = computed(() => totalDue.value - totalAcordo.value)
-const descontoReais  = computed(() => desconto.value)
-const minEntrada     = computed(() => totalDue.value * rules.entradaMinimaPct)
+const totalAcordo   = computed(() => totalDue.value * (1 - descontoPct.value))
+const descontoReais = computed(() => totalDue.value - totalAcordo.value)
+const minEntrada    = computed(() => totalDue.value * rules.entradaMinimaPct)
+
+// ── Modo de cálculo ──────────────────────────────────────────────────────────
+// 'entrada'  = usuário define entrada → calcula parcela
+// 'parcela'  = usuário define parcela → calcula entrada
+const modoCalculo = ref('entrada')
 
 // Inputs do usuário
-const entrada       = ref(Math.ceil(minEntrada.value))
-const numParcelas   = ref(6)
-const diaVencimento = ref(5)
+const entrada         = ref(Math.ceil(minEntrada.value))
+const numParcelas     = ref(6)
+const diaVencimento   = ref(5)
+const valorParcelaInput = ref(0) // usado no modo 'parcela'
 
 // Cálculos em tempo real
-const restante       = computed(() => Math.max(0, totalAcordo.value - entrada.value))
-const valorParcela   = computed(() => numParcelas.value > 0 ? restante.value / numParcelas.value : 0)
-const entradaPct     = computed(() => totalDue.value > 0 ? entrada.value / totalDue.value : 0)
+const valorParcela = computed(() => {
+  if (modoCalculo.value === 'parcela') return valorParcelaInput.value
+  const restante = Math.max(0, totalAcordo.value - entrada.value)
+  return numParcelas.value > 0 ? restante / numParcelas.value : 0
+})
+
+const entradaCalculada = computed(() => {
+  if (modoCalculo.value !== 'parcela') return entrada.value
+  const porParcelas = valorParcelaInput.value * numParcelas.value
+  return Math.max(0, totalAcordo.value - porParcelas)
+})
+
+const entradaEfetiva = computed(() =>
+  modoCalculo.value === 'parcela' ? entradaCalculada.value : entrada.value
+)
+
+const entradaPct = computed(() =>
+  totalDue.value > 0 ? entradaEfetiva.value / totalDue.value : 0
+)
+
+// Inicializa valorParcelaInput quando muda de modo
+function onModoCalculo(modo) {
+  modoCalculo.value = modo
+  if (modo === 'parcela') {
+    const restante = Math.max(0, totalAcordo.value - entrada.value)
+    valorParcelaInput.value = numParcelas.value > 0 ? Math.ceil(restante / numParcelas.value) : 0
+  } else {
+    // volta entrada para o minimo
+    entrada.value = Math.ceil(minEntrada.value)
+  }
+}
+
+// Parcela mínima: quando muda escopo, re-trava mínimo
+watch(() => modoEscopo.value, () => {
+  entrada.value = Math.ceil(minEntrada.value)
+})
 
 // Próxima data de vencimento do dia selecionado
 const primeiroBoleto = computed(() => {
@@ -53,10 +103,10 @@ const primeiroBoleto = computed(() => {
 
 // Status da proposta
 const proposalStatus = computed(() => {
-  if (entrada.value <= 0)                       return 'blocked_zero'
-  if (valorParcela.value < rules.parcelaMinimaValor) return 'blocked_parcela'
-  if (descontoReais.value > totalDue.value * 0.30)   return 'blocked_desconto'
-  if (contract.value?.acordoAtivo)               return 'blocked_acordo'
+  if (entradaEfetiva.value <= 0)                       return 'blocked_zero'
+  if (valorParcela.value < rules.parcelaMinimaValor)    return 'blocked_parcela'
+  if (descontoReais.value > totalDue.value * 0.30)      return 'blocked_desconto'
+  if (contract.value?.acordoAtivo)                      return 'blocked_acordo'
 
   const autoOk =
     entradaPct.value >= rules.entradaMinimaPct &&
@@ -65,20 +115,12 @@ const proposalStatus = computed(() => {
     totalDue.value <= rules.valorMaxAutoAprovacao
 
   if (autoOk) return 'auto'
-
-  const mesa2 =
-    entradaPct.value < 0.10 ||
-    numParcelas.value > 18 ||
-    (contract.value?.diasAtraso ?? 0) > 120 ||
-    totalDue.value > 50000
-
-  return mesa2 ? 'mesa2' : 'mesa1'
+  return 'mesa1' // sempre mesa 1 — analista decide se escala internamente
 })
 
 const statusConfig = computed(() => ({
   auto:             { icon: 'success', label: 'Elegível para aprovação imediata!', cls: 'alert-success' },
-  mesa1:            { icon: 'warning', label: 'Proposta será analisada pela Mesa de Crédito (1º Nível) — até 4h úteis.', cls: 'alert-warning' },
-  mesa2:            { icon: 'warning', label: 'Proposta fora da política padrão. Análise pelo 2º Nível — até 24h úteis.', cls: 'alert-warning' },
+  mesa1:            { icon: 'warning', label: 'Proposta será analisada pela Mesa de Crédito — retorno em até 24h úteis.', cls: 'alert-warning' },
   blocked_zero:     { icon: 'blocked', label: 'Entrada obrigatória. Informe um valor maior que zero.', cls: 'alert-danger' },
   blocked_parcela:  { icon: 'blocked', label: `Parcela mínima: ${formatMoney(rules.parcelaMinimaValor)}. Reduza o número de parcelas.`, cls: 'alert-danger' },
   blocked_desconto: { icon: 'blocked', label: 'Desconto excede o máximo permitido para seu atraso. Aumente a entrada.', cls: 'alert-danger' },
@@ -90,14 +132,12 @@ const canSubmit = computed(() => !proposalStatus.value.startsWith('blocked'))
 function submit() {
   if (!canSubmit.value) return
 
-  // Gera ID antecipado para linkar proposta e fluxo
   const id = `NEG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
 
-  // Persiste no flow store (cria a negotiation de verdade)
   flowSubmit({
     id,
     contratoId:    contract.value.id,
-    entrada:       entrada.value,
+    entrada:       entradaEfetiva.value,
     numParcelas:   numParcelas.value,
     valorParcela:  valorParcela.value,
     totalAcordo:   totalAcordo.value,
@@ -105,11 +145,10 @@ function submit() {
     proposalStatus: proposalStatus.value,
   })
 
-  // Passa dados para a tela de resultado
   setProposal({
     id,
     contratoId:    contract.value.id,
-    entrada:       entrada.value,
+    entrada:       entradaEfetiva.value,
     numParcelas:   numParcelas.value,
     valorParcela:  valorParcela.value,
     diaVencimento: diaVencimento.value,
@@ -166,8 +205,40 @@ function submit() {
           <div class="card">
             <h3 class="font-semibold text-gray-900 mb-4">Monte sua proposta</h3>
 
-            <!-- Entrada -->
-            <div class="mb-5">
+            <!-- Toggle: escopo da negociação -->
+            <div class="flex rounded-xl border border-gray-200 overflow-hidden mb-5">
+              <button
+                type="button"
+                class="flex-1 py-2 text-sm font-medium transition-colors"
+                :class="modoEscopo === 'contrato' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'"
+                @click="modoEscopo = 'contrato'"
+              >Contrato completo</button>
+              <button
+                type="button"
+                class="flex-1 py-2 text-sm font-medium transition-colors border-l border-gray-200"
+                :class="modoEscopo === 'debito' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'"
+                @click="modoEscopo = 'debito'"
+              >Apenas débito vencido</button>
+            </div>
+
+            <!-- Toggle: modo de cálculo -->
+            <div class="flex rounded-xl border border-gray-200 overflow-hidden mb-5">
+              <button
+                type="button"
+                class="flex-1 py-2 text-sm font-medium transition-colors"
+                :class="modoCalculo === 'entrada' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50'"
+                @click="onModoCalculo('entrada')"
+              >Definir entrada</button>
+              <button
+                type="button"
+                class="flex-1 py-2 text-sm font-medium transition-colors border-l border-gray-200"
+                :class="modoCalculo === 'parcela' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50'"
+                @click="onModoCalculo('parcela')"
+              >Definir parcela</button>
+            </div>
+
+            <!-- Entrada (modo entrada-first) -->
+            <div v-if="modoCalculo === 'entrada'" class="mb-5">
               <label class="block text-sm font-medium text-gray-700 mb-1.5">
                 Valor de entrada <span class="text-red-500">*</span>
                 <span class="font-normal text-gray-400 ml-1">(via Pix)</span>
@@ -187,6 +258,28 @@ function submit() {
               <p class="text-xs mt-1" :class="entradaPct < rules.entradaMinimaPct ? 'text-amber-600' : 'text-gray-400'">
                 Mínimo sugerido: {{ formatMoney(minEntrada) }} ({{ (rules.entradaMinimaPct * 100).toFixed(0) }}%)
                 · Você está com {{ (entradaPct * 100).toFixed(0) }}%
+              </p>
+            </div>
+
+            <!-- Valor da parcela (modo parcela-first) -->
+            <div v-if="modoCalculo === 'parcela'" class="mb-5">
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                Valor da parcela desejada <span class="text-red-500">*</span>
+              </label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-sm">R$</span>
+                <input
+                  v-model.number="valorParcelaInput"
+                  type="number"
+                  :min="rules.parcelaMinimaValor"
+                  step="50"
+                  class="input-field pl-10"
+                  placeholder="0,00"
+                />
+              </div>
+              <p class="text-xs text-gray-400 mt-1">
+                Entrada calculada automaticamente: <span class="font-semibold text-gray-700">{{ formatMoney(entradaCalculada) }}</span>
+                ({{ (entradaPct * 100).toFixed(0) }}% do total)
               </p>
             </div>
 
@@ -220,7 +313,7 @@ function submit() {
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1.5">Dia de vencimento dos boletos</label>
               <select v-model.number="diaVencimento" class="input-field">
-                <option v-for="d in 28" :key="d" :value="d">Dia {{ d }}</option>
+              <option v-for="d in [1,5,10,15,20,25]" :key="d" :value="d">Dia {{ d }}</option>
               </select>
               <p class="text-xs text-gray-400 mt-1">Primeiro boleto: {{ primeiroBoleto }}</p>
             </div>
@@ -230,6 +323,20 @@ function submit() {
         <!-- Coluna direita: resultado em tempo real -->
         <div class="space-y-4">
 
+          <!-- Banner desconto pré-aprovado -->
+          <div v-if="descontoPct > 0" class="rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 shadow">
+            <div class="flex items-start gap-3">
+              <div class="text-2xl mt-0.5">🎉</div>
+              <div>
+                <p class="font-bold text-sm">Desconto pré-aprovado de {{ (descontoPct * 100).toFixed(0) }}%!</p>
+                <p class="text-xs text-green-100 mt-0.5">
+                  Negocie hoje e economize <span class="font-bold text-white">{{ formatMoney(descontoReais) }}</span>.
+                  Oferta pode expirar a qualquer momento.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <!-- Card resultado -->
           <div class="card border-2 border-blue-200 bg-blue-50">
             <h3 class="font-semibold text-blue-900 mb-4">Resultado do acordo</h3>
@@ -237,7 +344,7 @@ function submit() {
             <div class="space-y-2 text-sm mb-4">
               <div class="flex justify-between">
                 <span class="text-blue-700">Entrada (Pix)</span>
-                <span class="font-bold text-blue-900">{{ formatMoney(entrada) }}</span>
+                <span class="font-bold text-blue-900">{{ formatMoney(entradaEfetiva) }}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-blue-700">{{ numParcelas }}x de</span>

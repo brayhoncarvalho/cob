@@ -51,8 +51,15 @@ function goAction(n) {
         v-for="n in negotiations"
         :key="n.id"
         class="card hover:shadow-md transition-shadow cursor-pointer"
+        :class="n.status === 'contraproposta' ? 'border-2 border-purple-300 bg-purple-50' : ''"
         @click="goAction(n)"
       >
+        <!-- Banner especial para contraproposta -->
+        <div v-if="n.status === 'contraproposta'" class="flex items-center gap-2 -mt-1 mb-3 text-purple-700">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
+          <span class="font-bold text-sm">Nova oferta disponível! Temos uma contraproposta para você.</span>
+        </div>
+
         <div class="flex items-start justify-between gap-4">
           <div class="flex-1 min-w-0">
             <div class="flex flex-wrap items-center gap-2 mb-2">
@@ -90,13 +97,22 @@ function goAction(n) {
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
               {{ n.motivo }}
             </div>
+            <!-- Detalhes da contraproposta -->
+            <div v-if="n.status === 'contraproposta' && n.contraproposta" class="mt-2 bg-white rounded-lg p-2.5 border border-purple-200 text-xs text-purple-900 grid grid-cols-3 gap-2">
+              <div><span class="text-purple-500">Entrada</span><br><span class="font-bold">{{ formatMoney(n.contraproposta.entrada) }}</span></div>
+              <div><span class="text-purple-500">Parcelas</span><br><span class="font-bold">{{ n.contraproposta.numParcelas }}x {{ formatMoney(n.contraproposta.valorParcela) }}</span></div>
+              <div><span class="text-purple-500">Total</span><br><span class="font-bold">{{ formatMoney(n.contraproposta.total) }}</span></div>
+            </div>
           </div>
 
           <div class="shrink-0 flex flex-col items-end gap-2">
             <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
             </svg>
-            <span class="text-xs text-blue-600 font-medium whitespace-nowrap">
+            <span
+              class="text-xs font-medium whitespace-nowrap"
+              :class="n.status === 'contraproposta' ? 'text-purple-700 font-bold' : 'text-blue-600'"
+            >
               {{ actionLabel[n.status] ?? 'Ver' }}
             </span>
           </div>

@@ -101,6 +101,36 @@ function parcela_action(p) {
           </div>
         </div>
 
+        <!-- Detalhamento Juros / Multa / IOF -->
+        <div v-if="contract.parcelasVencidas > 0" class="mt-4 border border-red-100 rounded-lg overflow-hidden">
+          <div class="bg-red-50 px-4 py-2 flex items-center justify-between">
+            <span class="text-xs font-semibold text-red-700">Detalhamento de encargos</span>
+            <span class="text-xs text-red-600">Parcelas #{{ contract.parcelas.filter(p=>p.status==='vencida').map(p=>p.numero).join(', #') }}</span>
+          </div>
+          <div class="divide-y divide-red-50">
+            <div class="px-4 py-2.5 flex justify-between text-sm">
+              <span class="text-gray-600">Valor original vencido</span>
+              <span class="font-medium">{{ formatMoney(contract.parcelas.filter(p=>p.status==='vencida').reduce((s,p)=>s+p.valor,0)) }}</span>
+            </div>
+            <div class="px-4 py-2.5 flex justify-between text-sm">
+              <span class="text-red-700">Juros de mora</span>
+              <span class="font-medium text-red-700">+ {{ formatMoney(contract.parcelas.filter(p=>p.status==='vencida').reduce((s,p)=>s+(p.juros??0),0)) }}</span>
+            </div>
+            <div class="px-4 py-2.5 flex justify-between text-sm">
+              <span class="text-red-700">Multa contratual</span>
+              <span class="font-medium text-red-700">+ {{ formatMoney(contract.parcelas.filter(p=>p.status==='vencida').reduce((s,p)=>s+(p.multa??0),0)) }}</span>
+            </div>
+            <div class="px-4 py-2.5 flex justify-between text-sm">
+              <span class="text-red-700">IOF de mora</span>
+              <span class="font-medium text-red-700">+ {{ formatMoney(contract.parcelas.filter(p=>p.status==='vencida').reduce((s,p)=>s+(p.iof??0),0)) }}</span>
+            </div>
+            <div class="px-4 py-2.5 flex justify-between text-sm font-bold bg-red-50">
+              <span class="text-red-800">Total atualizado</span>
+              <span class="text-red-800">{{ formatMoney(totalVencido) }}</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Alerta de atraso -->
         <div v-if="contract.parcelasVencidas > 0" class="alert-danger mt-4">
           <p class="font-semibold text-sm">{{ contract.parcelasVencidas }} parcela(s) vencida(s) — {{ contract.diasAtraso }} dias em atraso</p>
@@ -133,6 +163,7 @@ function parcela_action(p) {
               <tr class="text-xs text-gray-500 border-b border-gray-100">
                 <th class="text-left py-2 font-medium">#</th>
                 <th class="text-left py-2 font-medium">Vencimento</th>
+                <th class="text-left py-2 font-medium">Dt. Pagamento</th>
                 <th class="text-right py-2 font-medium">Valor</th>
                 <th class="text-center py-2 font-medium">Status</th>
                 <th class="text-right py-2 font-medium">Ação</th>
@@ -156,6 +187,10 @@ function parcela_action(p) {
                   <span v-if="p.status === 'vencida'" class="inline-flex items-center ml-1 text-xs text-red-500">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
                   </span>
+                </td>
+                <td class="py-2.5 text-sm">
+                  <span v-if="p.dataPagamento" class="text-green-700 font-medium">{{ formatDate(p.dataPagamento) }}</span>
+                  <span v-else class="text-gray-300">—</span>
                 </td>
                 <td class="py-2.5 text-right font-semibold">
                   <span :class="p.status === 'vencida' ? 'text-red-700' : 'text-gray-900'">

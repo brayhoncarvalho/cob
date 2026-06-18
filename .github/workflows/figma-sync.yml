@@ -1,0 +1,118 @@
+# ============================================================
+# Figma Sync — Pipeline Automatizado
+# ============================================================
+# Roda diariamente ou por trigger manual.
+# Sincroniza tokens do Figma e abre PR com as mudanças.
+#
+# Secrets necessários:
+#   FIGMA_TOKEN   — Personal Access Token do service account (file:read)
+#
+# Variables necessárias:
+#   FIGMA_FILE_ID — ID do arquivo Figma canônico
+# ============================================================
+
+name: Figma Token Sync
+
+on:
+  schedule:
+    # Diariamente às 08:00 UTC (05:00 BRT)
+    - cron: '0 8 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      force_sync:
+        description: 'Forçar sync mesmo sem mudanças detectadas'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: Teste/package-lock.json
+
+      - name: Install dependencies
+        working-directory: Teste
+        run: npm ci --ignore-scripts
+
+      - name: Run Figma Preflight
+        working-directory: Teste
+        env:
+          FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
+          FIGMA_FILE_ID: ${{ vars.FIGMA_FILE_ID }}
+        run: node ../copilot-config/scripts/figma-check.mjs
+
+      - name: Run Figma Sync
+        working-directory: Teste
+        env:
+          FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
+          FIGMA_FILE_ID: ${{ vars.FIGMA_FILE_ID }}
+        run: node ../copilot-config/scripts/figma-sync.mjs
+
+      - name: Check for changes
+        id: changes
+        working-directory: Teste
+        run: |
+          git diff --quiet dock-ds.config.json figma-node-data.json && echo "changed=false" >> $GITHUB_OUTPUT || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Update lastSyncedAt in config
+        if: steps.changes.outputs.changed == 'true'
+        working-directory: Teste
+        run: |
+          node -e "
+            const fs = require('fs');
+            const config = JSON.parse(fs.readFileSync('dock-ds.config.json', 'utf-8'));
+            config.figma.lastSyncedAt = new Date().toISOString();
+            fs.writeFileSync('dock-ds.config.json', JSON.stringify(config, null, 2) + '\n');
+          "
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.changed == 'true' || inputs.force_sync == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: chore/figma-sync
+          delete-branch: true
+          title: 'chore(figma): sync tokens from Figma'
+          body: |
+            ## 🎨 Figma Token Sync
+
+            Sincronização automática de tokens do arquivo Figma canônico.
+
+            ### Arquivos atualizados
+            - `Teste/dock-ds.config.json` — cores e fontes
+            - `Teste/figma-node-data.json` — snapshot de nós
+
+            ### Ação necessária
+            - [ ] Revisar tokens novos/removidos
+            - [ ] Verificar se `npm run validate:design` passa
+            - [ ] Aprovar e mergear se correto
+
+            ---
+            _Gerado automaticamente por [Figma Sync CI](.github/workflows/figma-sync.yml)_
+          labels: |
+            figma-sync
+            design-tokens
+            automated
+          commit-message: 'chore(figma): sync tokens [automated]'
+
+      - name: No changes detected
+        if: steps.changes.outputs.changed == 'false' && inputs.force_sync != 'true'
+        run: echo "✅ Nenhuma mudança de tokens detectada. Arquivo Figma está sincronizado."
