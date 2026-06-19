@@ -77,7 +77,7 @@ const metaPct = computed(() => Math.round((rules.metaRecuperacaoPct ?? 0.80) * 1
         <p class="text-xl font-bold text-red-600">{{ formatMoney(totalPendente) }}</p>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 p-5">
-        <p class="text-xs text-gray-400 uppercase font-medium mb-1">Recuperado (mês)</p>
+        <p class="text-xs text-gray-400 uppercase font-medium mb-1">Recuperado (acumulado)</p>
         <p class="text-xl font-bold text-green-600">{{ formatMoney(totalRecuperado) }}</p>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 p-5">
@@ -180,7 +180,7 @@ const metaPct = computed(() => Math.round((rules.metaRecuperacaoPct ?? 0.80) * 1
           />
         </div>
         <p v-if="txRecuperacao >= metaPct" class="text-xs text-green-600 font-medium mt-1">Meta atingida ✓</p>
-        <p v-else class="text-xs text-gray-400 mt-1">Faltam {{ metaPct - txRecuperacao }}pp para a meta.</p>
+        <p v-else class="text-xs text-gray-400 mt-1">Faltam {{ metaPct - txRecuperacao }} propostas para a meta.</p>
       </div>
     </div>
 

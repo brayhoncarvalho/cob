@@ -51,7 +51,10 @@ function goAction(n) {
         v-for="n in negotiations"
         :key="n.id"
         class="card hover:shadow-md transition-shadow cursor-pointer"
-        :class="n.status === 'contraproposta' ? 'border-2 border-purple-300 bg-purple-50' : ''"
+        :class="[
+          n.status === 'contraproposta' ? 'border-2 border-purple-300 bg-purple-50' : '',
+          ['quitado', 'cancelada'].includes(n.status) ? 'opacity-60' : '',
+        ]"
         @click="goAction(n)"
       >
         <!-- Banner especial para contraproposta -->

@@ -34,7 +34,12 @@ const timeLeft     = ref(86400) // 24h em segundos
 
 let timer = null
 
+// Pix mockado — gerado uma vez por montagem do componente (código estável)
+const pixCodeBase = ref('')
+
 onMounted(() => {
+  const uid = Math.random().toString(36).slice(2,10).toUpperCase()
+  pixCodeBase.value = uid
   timer = setInterval(() => {
     if (timeLeft.value > 0 && paymentState.value === 'waiting') {
       timeLeft.value--
@@ -44,6 +49,10 @@ onMounted(() => {
   }, 1000)
 })
 
+const pixCode = computed(() =>
+  `00020126580014br.gov.bcb.pix0136c15b4fc3-f53e-4810-8f6e-eb5ab459${pixCodeBase.value}52040000530398654${String(valorTotal.value.toFixed(2)).replace('.','').padStart(10,'0')}5802BR5920Portal Cobrança LTDA6009SAO PAULO62070503***6304ABCD`
+)
+
 onUnmounted(() => clearInterval(timer))
 
 const timeDisplay = computed(() => {
@@ -52,11 +61,6 @@ const timeDisplay = computed(() => {
   const s = timeLeft.value % 60
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
 })
-
-// Pix mockado
-const pixCode = computed(() =>
-  `00020126580014br.gov.bcb.pix0136c15b4fc3-f53e-4810-8f6e-eb5ab459${Math.random().toString(36).slice(2,10).toUpperCase()}52040000530398654${String(valorTotal.value.toFixed(2)).replace('.','').padStart(10,'0')}5802BR5920Portal Cobrança LTDA6009SAO PAULO62070503***6304ABCD`
-)
 
 const copied = ref(false)
 function copyPix() {
@@ -70,6 +74,7 @@ function simulatePayment() {
 }
 
 function generateNew() {
+  pixCodeBase.value = Math.random().toString(36).slice(2,10).toUpperCase()
   timeLeft.value = 86400
   paymentState.value = 'waiting'
 }

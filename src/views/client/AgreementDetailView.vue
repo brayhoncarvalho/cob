@@ -44,14 +44,16 @@ const stepperFailed = computed(() =>
   ['reprovada', 'cancelada'].includes(negotiation.value?.status)
 )
 
-// Pagamento com persistência no flow store
-const pagandoIndex = ref(null)
+// Confirmação visual pós-pagamento
+const pagamentoConfirmado = ref(false)
 
 function pagarParcela(idx) {
   pagandoIndex.value = idx
   setTimeout(() => {
     markParcelaPaid(negotiation.value.id, idx)
     pagandoIndex.value = null
+    pagamentoConfirmado.value = true
+    setTimeout(() => pagamentoConfirmado.value = false, 4000)
   }, 1200)
 }
 
@@ -95,6 +97,8 @@ function pagarParcelaBoleto(idx) {
   setTimeout(() => {
     markParcelaPaid(negotiation.value.id, idx)
     pagandoIndex.value = null
+    pagamentoConfirmado.value = true
+    setTimeout(() => pagamentoConfirmado.value = false, 4000)
   }, 800)
 }
 
@@ -198,6 +202,27 @@ function copiarPix() {
 
       <!-- Header do acordo -->
       <div class="card mb-6">
+
+      <!-- Toast de confirmação de pagamento -->
+      <Teleport to="body">
+        <Transition
+          enter-active-class="transition-all duration-300 ease-out"
+          enter-from-class="opacity-0 translate-y-2"
+          enter-to-class="opacity-100 translate-y-0"
+          leave-active-class="transition-all duration-200"
+          leave-to-class="opacity-0 translate-y-2"
+        >
+          <div
+            v-if="pagamentoConfirmado"
+            class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white text-sm font-semibold px-5 py-3 rounded-full shadow-lg flex items-center gap-2 pointer-events-none"
+            role="status"
+            aria-live="polite"
+          >
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+            Pagamento registrado com sucesso!
+          </div>
+        </Transition>
+      </Teleport>
         <div class="flex flex-wrap items-center gap-2 mb-4">
           <h2 class="font-mono font-bold text-gray-900">{{ negotiation.id }}</h2>
           <StatusBadge :status="negotiation.status" />

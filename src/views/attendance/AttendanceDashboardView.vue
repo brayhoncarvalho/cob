@@ -297,6 +297,11 @@ function initials(nome) {
                 class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold"
                 :class="URGENCIA_CONFIG[c.urgencia].badge"
               >{{ URGENCIA_CONFIG[c.urgencia].texto }}</span>
+              <!-- Badge demo: clientes sem atividade real -->
+              <span
+                v-if="c.totalContratos === 0 && c.urgencia === 0"
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-400 border border-dashed border-gray-300"
+              >Demo</span>
             </div>
 
             <p class="text-xs text-gray-400 font-mono mt-0.5">{{ c.cpf }}</p>

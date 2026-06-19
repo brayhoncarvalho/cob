@@ -39,8 +39,7 @@ const proximoVencimento = computed(() => {
 
 const notificacoes = computed(() => {
   const items = []
-  if (totalVencidas.value > 0)
-    items.push({ type: 'danger', text: `${totalVencidas.value} parcela(s) vencida(s) no total de ${formatMoney(totalEmAberto.value)}`, action: '/contratos' })
+  // Notif de vencidas suprimida quando totalVencidas > 0 — o banner de atraso vermelho já cobre isso (evita triplicação de alertas)
   const agora = new Date()
   negotiations.filter(n => n.status === 'em_analise').forEach(n => {
     const expirado = n.prazoResposta && new Date(n.prazoResposta) < agora

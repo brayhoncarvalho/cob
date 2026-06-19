@@ -45,8 +45,18 @@ const itens = computed(() =>
 
 // Estatísticas
 const totalPendentes   = computed(() => flowState.negotiations.filter(n => n.status === 'em_analise').length)
-const totalEmAnalise   = 0
-const resolvidasHoje   = 1
+const totalEmAnalise   = computed(() => itens.value.filter(n => n.horasNaFila > 0).length)
+const hoje = new Date()
+const resolvidasHoje   = computed(() =>
+  flowState.negotiations.filter(n => {
+    const dataRef = n.dataAprovacao || n.dataReprovacao || n.dataCancelamento
+    if (!dataRef) return false
+    const d = new Date(dataRef)
+    return d.getFullYear() === hoje.getFullYear() &&
+           d.getMonth() === hoje.getMonth() &&
+           d.getDate() === hoje.getDate()
+  }).length
+)
 
 function goAnalise(id) {
   router.push(`/backoffice/proposta/${id}`)

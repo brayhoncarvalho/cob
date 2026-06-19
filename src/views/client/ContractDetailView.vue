@@ -333,7 +333,6 @@ const parcelasEmAberto = computed(() =>
                 <th class="text-left py-2 font-medium">Dt. Pagamento</th>
                 <th class="text-right py-2 font-medium">Valor</th>
                 <th class="text-center py-2 font-medium">Status</th>
-                <th class="text-right py-2 font-medium">Ação</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
@@ -361,14 +360,6 @@ const parcelasEmAberto = computed(() =>
                 </td>
                 <td class="py-2.5 text-center">
                   <StatusBadge :status="p.status" small />
-                </td>
-                <td class="py-2.5 text-right">
-                  <RouterLink
-                    v-if="parcela_action(p) === 'antecipar'"
-                    :to="`/contratos/${contract.id}/antecipar?parcelas=${p.numero}`"
-                    class="text-xs font-medium text-gray-500 hover:underline"
-                  >Antecipar</RouterLink>
-                  <span v-else class="text-xs text-gray-300">—</span>
                 </td>
               </tr>
             </tbody>

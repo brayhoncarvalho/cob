@@ -184,7 +184,7 @@ const statusConfig = computed(() => ({
   blocked_desconto:   { icon: 'blocked', label: 'Desconto excede o máximo permitido para seu atraso. Aumente a entrada.', cls: 'alert-danger' },
   blocked_acordo:     { icon: 'blocked', label: 'Você já possui um acordo ativo neste contrato.', cls: 'alert-danger' },
   blocked_cooldown:   { icon: 'blocked', label: `Nova negociação bloqueada por ${bloqueioNegocio.value?.diasRestantes ?? rules.cooldownCancelamentoDias} dia(s) após cancelamento do acordo anterior.`, cls: 'alert-danger' },
-  blocked_tentativas: { icon: 'blocked', label: `Limite de ${bloqueioNegocio.value?.max ?? rules.maxTentativasNegociacao} tentativas de negociação atingido para este contrato.`, cls: 'alert-danger' },
+  blocked_tentativas: { icon: 'blocked', label: `Limite de ${bloqueioNegocio.value?.max ?? rules.maxTentativasNegociacao} tentativas de negociação atingido para este contrato. Entre em contato com nosso atendimento para solicitar uma análise manual.`, cls: 'alert-danger', cta: '/negociacoes' },
 }[proposalStatus.value] ?? { icon: '', label: '', cls: '' }))
 
 const canSubmit = computed(() => !proposalStatus.value.startsWith('blocked'))
@@ -235,8 +235,8 @@ function submit() {
     <template v-else>
       <div class="grid lg:grid-cols-2 gap-6">
 
-        <!-- Coluna esquerda: situação + formulário -->
-        <div class="space-y-6">
+        <!-- Coluna esquerda: situação + formulário — aparece SEGUNDO em mobile (resultado primeiro = feedback imediato) -->
+        <div class="order-last lg:order-first space-y-6">
 
           <!-- Situação atual -->
           <div class="card border-red-200 bg-red-50">
@@ -382,8 +382,8 @@ function submit() {
           </div>
         </div>
 
-        <!-- Coluna direita: resultado em tempo real -->
-        <div class="space-y-4">
+        <!-- Coluna direita: resultado em tempo real — aparece PRIMEIRO em mobile para feedback imediato -->
+        <div class="order-first lg:order-last space-y-4">
 
           <!-- Banner desconto pré-aprovado -->
           <div v-if="descontoPct > 0" class="rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 shadow">
@@ -434,7 +434,12 @@ function submit() {
             <svg v-if="statusConfig.icon === 'success'" class="w-5 h-5 text-green-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             <svg v-else-if="statusConfig.icon === 'warning'" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
             <svg v-else-if="statusConfig.icon === 'blocked'" class="w-5 h-5 text-red-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
-            <span>{{ statusConfig.label }}</span>
+            <div>
+              <span>{{ statusConfig.label }}</span>
+              <RouterLink v-if="statusConfig.cta" :to="statusConfig.cta" class="block mt-1 text-xs font-semibold text-red-700 underline hover:text-red-900">
+                Falar com atendimento →
+              </RouterLink>
+            </div>
           </div>
 
           <!-- Submeter -->
