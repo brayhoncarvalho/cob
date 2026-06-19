@@ -13,7 +13,7 @@ const { state: flowState, clientCancelNegotiation } = useFlow()
 // Ordenar: em análise primeiro, depois por data desc
 const negotiations = computed(() =>
   [...flowState.negotiations].sort((a, b) => {
-    const order = { em_analise: 0, contraproposta: 1, em_pagamento: 2, aprovada: 3, reprovada: 4, cancelada: 5 }
+    const order = { em_analise: 0, contraproposta: 1, em_pagamento: 2, aprovada: 3, reprovada: 4, quitado: 5, cancelada: 6 }
     const oa = order[a.status] ?? 9
     const ob = order[b.status] ?? 9
     return oa !== ob ? oa - ob : b.dataEnvio.localeCompare(a.dataEnvio)

@@ -41,9 +41,18 @@ const notificacoes = computed(() => {
   const items = []
   if (totalVencidas.value > 0)
     items.push({ type: 'danger', text: `${totalVencidas.value} parcela(s) vencida(s) no total de ${formatMoney(totalEmAberto.value)}`, action: '/contratos' })
-  negotiations.filter(n => n.status === 'em_analise').forEach(n =>
-    items.push({ type: 'warning', text: `Proposta ${n.id} em análise. Prazo até ${formatDate(n.prazoResposta)}`, action: `/negociacoes/${n.id}` })
-  )
+  const agora = new Date()
+  negotiations.filter(n => n.status === 'em_analise').forEach(n => {
+    const expirado = n.prazoResposta && new Date(n.prazoResposta) < agora
+    items.push({
+      type: 'warning',
+      text: expirado
+        ? `Proposta ${n.id} em análise. Prazo encerrado em ${formatDate(n.prazoResposta)}.`
+        : `Proposta ${n.id} em análise. Prazo até ${formatDate(n.prazoResposta)}.`,
+      expired: expirado,
+      action: `/negociacoes/${n.id}`
+    })
+  })
   negotiations.filter(n => n.status === 'em_pagamento' && !n.entradaPaga).forEach(n =>
     items.push({ type: 'success', text: `Acordo ${n.id} aprovado! Pague a entrada para ativar.`, action: `/negociacoes/${n.id}` })
   )
@@ -214,48 +223,34 @@ function goToNegociacoes() {
       </button>
     </div>
 
-    <!-- CTAs principais -->
-    <div class="flex flex-wrap gap-3 mb-8">
-      <RouterLink to="/contratos" class="btn-primary">Ver Contratos</RouterLink>
-      <RouterLink
-        v-if="totalVencidas > 0"
-        to="/contratos"
-        class="btn-danger"
-      >
-        Pagar Agora
-      </RouterLink>
-      <RouterLink
-        v-if="totalVencidas > 0"
-        :to="`/contratos/${contracts.find(c => c.status === 'em_atraso')?.id}/negociar`"
-        class="btn-secondary"
-      >
-        Negociar Débito
-      </RouterLink>
-      <RouterLink to="/negociacoes" class="btn-secondary">Minhas Negociações</RouterLink>
-    </div>
-
     <!-- Contratos resumo -->
     <div class="card mb-6">
-      <h2 class="font-semibold text-gray-900 mb-4">Seus contratos</h2>
-      <div class="space-y-3">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-semibold text-gray-900">Seus contratos</h2>
+        <RouterLink to="/contratos" class="text-sm text-blue-600 hover:underline font-medium">Ver todos →</RouterLink>
+      </div>
+      <div class="space-y-2">
         <div
           v-for="c in contracts"
           :key="c.id"
-          class="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-colors cursor-pointer"
+          class="flex items-center justify-between p-3 rounded-xl border transition-colors cursor-pointer"
+          :class="c.status === 'quitado'
+            ? 'border-gray-100 bg-gray-50/60 opacity-60 hover:opacity-90'
+            : 'border-gray-100 hover:border-blue-200 hover:bg-blue-50'"
           @click="router.push(`/contratos/${c.id}`)"
         >
           <div>
             <div class="flex items-center gap-2">
-              <span class="font-semibold text-gray-900 text-sm">#{{ c.id }}</span>
-              <span class="text-xs text-gray-500">{{ c.tipo }}</span>
+              <span class="font-semibold text-sm" :class="c.status === 'quitado' ? 'text-gray-500' : 'text-gray-900'">#{{ c.id }}</span>
+              <span class="text-xs text-gray-400">{{ c.tipo }}</span>
               <StatusBadge :status="c.status" small />
             </div>
-            <p class="text-xs text-gray-500 mt-0.5">
-              {{ c.parcelasPagas }}/{{ c.totalParcelas }} pagas ·
-              Saldo: {{ formatMoney(c.saldoDevedor) }}
+            <p class="text-xs text-gray-400 mt-0.5">
+              {{ c.parcelasPagas }}/{{ c.totalParcelas }} pagas
+              <template v-if="c.status !== 'quitado'"> · Saldo: {{ formatMoney(c.saldoDevedor) }}</template>
             </p>
           </div>
-          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
           </svg>
         </div>
@@ -285,7 +280,13 @@ function goToNegociacoes() {
             <!-- success -->
             <svg v-else class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           </span>
-          <p class="text-sm text-gray-700 flex-1">{{ n.text }}</p>
+          <div class="flex-1">
+            <p class="text-sm text-gray-700">{{ n.text }}</p>
+            <span
+              v-if="n.expired"
+              class="inline-block mt-1 text-xs font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full"
+            >Prazo expirado</span>
+          </div>
           <svg class="w-4 h-4 text-gray-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
           </svg>

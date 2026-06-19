@@ -32,7 +32,10 @@ function totalVencidoContrato(c) {
       <div
         v-for="c in contracts"
         :key="c.id"
-        class="card hover:border-blue-200 hover:shadow-md transition-all cursor-pointer"
+        class="card transition-all cursor-pointer"
+        :class="c.status === 'quitado'
+          ? 'opacity-60 hover:opacity-90 border-gray-100'
+          : 'hover:border-blue-200 hover:shadow-md'"
         @click="router.push(`/contratos/${c.id}`)"
       >
         <div class="flex items-start justify-between gap-4">
