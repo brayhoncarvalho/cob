@@ -3,7 +3,7 @@ import initialNegotiations from '@/mocks/negotiations.json'
 import initialContracts    from '@/mocks/contracts.json'
 import { useRules } from '@/stores/rules.js'
 
-const STORAGE_KEY = 'portal_flow_v1'
+const STORAGE_KEY = 'portal_flow_v2'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
