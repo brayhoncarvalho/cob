@@ -16,6 +16,7 @@ const MAP = {
   contraproposta: { label: 'Contraproposta', cls: 'bg-purple-100 text-purple-800' },
   pending_client_approval: { label: 'Aguardando cliente', cls: 'bg-teal-100 text-teal-800' },
   paga:         { label: 'Paga',         cls: 'bg-green-100 text-green-800' },
+  quitado:      { label: 'Quitado',      cls: 'bg-emerald-100 text-emerald-800' },
   vencida:      { label: 'Vencida',      cls: 'bg-red-100 text-red-800' },
   proxima:      { label: 'A vencer',     cls: 'bg-amber-100 text-amber-800' },
   futura:       { label: 'Futura',       cls: 'bg-gray-100 text-gray-600' },

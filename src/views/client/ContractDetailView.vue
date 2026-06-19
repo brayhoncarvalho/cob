@@ -151,6 +151,17 @@ function parcela_action(p) {
             Ver detalhes do acordo →
           </RouterLink>
         </div>
+
+        <!-- Banner de quitação -->
+        <div v-if="contract.status === 'quitado'" class="mt-4 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-4 flex items-start gap-3">
+          <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+            <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div>
+            <p class="font-semibold text-emerald-800 text-sm">Contrato quitado!</p>
+            <p class="text-xs text-emerald-700 mt-0.5">Todas as obrigações deste contrato foram cumpridas. Parabéns!</p>
+          </div>
+        </div>
       </div>
 
       <!-- Parcelas -->

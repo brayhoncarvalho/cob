@@ -18,6 +18,7 @@ const ProposalAnalysisView = () => import('@/views/backoffice/ProposalAnalysisVi
 const ManagerDashboardView = () => import('@/views/backoffice/ManagerDashboardView.vue')
 const ManagerAnalysisView  = () => import('@/views/backoffice/ManagerAnalysisView.vue')
 const ParametrosView       = () => import('@/views/backoffice/ParametrosView.vue')
+const TemplatesView        = () => import('@/views/backoffice/TemplatesView.vue')
 
 const AttendanceDashboardView    = () => import('@/views/attendance/AttendanceDashboardView.vue')
 const AttendanceNegotiationView  = () => import('@/views/attendance/AttendanceNegotiationView.vue')
@@ -49,6 +50,7 @@ const routes = [
   { path: '/backoffice/gerente',             component: ManagerDashboardView, meta: { requiresAuth: true, role: 'manager' } },
   { path: '/backoffice/gerente/proposta/:id',component: ManagerAnalysisView,  meta: { requiresAuth: true, role: 'manager' } },
   { path: '/backoffice/gerente/parametros',   component: ParametrosView,       meta: { requiresAuth: true, role: 'manager' } },
+  { path: '/backoffice/gerente/comunicacao',   component: TemplatesView,        meta: { requiresAuth: true, role: 'manager' } },
 
   // Atendimento
   { path: '/atendimento',                              component: AttendanceDashboardView,   meta: { requiresAuth: true, role: 'attendant' } },

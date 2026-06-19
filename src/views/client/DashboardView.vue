@@ -25,9 +25,14 @@ const contratosAtivos   = computed(() => contracts.filter(c => c.status !== 'can
 const saldoTotal        = computed(() => contracts.reduce((s, c) => s + c.saldoDevedor, 0))
 const acordosAtivos     = computed(() => negotiations.filter(n => n.status === 'em_pagamento').length)
 const negsPendentes     = computed(() => negotiations.filter(n => n.status === 'em_analise').length)
+const primeiroContratoEmAtraso = computed(() =>
+  contracts.find(c => c.parcelasVencidas > 0 || c.status === 'em_atraso') ?? null
+)
 const proximoVencimento = computed(() => {
   const all = contracts.flatMap(c =>
-    c.parcelas.filter(p => p.status === 'proxima' || (p.status === 'futura' && !c.parcelasVencidas))
+    c.parcelas
+      .filter(p => p.status === 'proxima' || (p.status === 'futura' && !c.parcelasVencidas))
+      .map(p => ({ ...p, contratoId: c.id }))
   ).sort((a, b) => a.vencimento.localeCompare(b.vencimento))
   return all[0] ?? null
 })
@@ -49,6 +54,30 @@ const notificacoes = computed(() => {
 const propostasAtendente = computed(() =>
   negotiations.filter(n => n.status === 'pending_client_approval')
 )
+
+function goToAtrasos() {
+  if (primeiroContratoEmAtraso.value?.id) {
+    router.push(`/contratos/${primeiroContratoEmAtraso.value.id}`)
+    return
+  }
+  router.push('/contratos')
+}
+
+function goToContratos() {
+  router.push('/contratos')
+}
+
+function goToProximoVencimento() {
+  if (proximoVencimento.value?.contratoId) {
+    router.push(`/contratos/${proximoVencimento.value.contratoId}`)
+    return
+  }
+  router.push('/contratos')
+}
+
+function goToNegociacoes() {
+  router.push('/negociacoes')
+}
 </script>
 
 <template>
@@ -101,7 +130,15 @@ const propostasAtendente = computed(() =>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
 
       <!-- Parcelas em atraso -->
-      <div :class="['card', totalVencidas > 0 ? 'border-red-200 bg-red-50' : '']">
+      <button
+        type="button"
+        :aria-label="totalVencidas > 0 ? `Ver ${totalVencidas} parcela(s) em atraso` : 'Ver contratos'"
+        :class="[
+          'card w-full text-left min-h-[44px] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 transition-all',
+          totalVencidas > 0 ? 'border-red-200 bg-red-50 hover:border-red-300' : 'hover:border-blue-200'
+        ]"
+        @click="goToAtrasos"
+      >
         <p class="section-title text-xs" :class="totalVencidas > 0 ? 'text-red-500' : ''">Em atraso</p>
         <p class="text-2xl font-bold mt-1" :class="totalVencidas > 0 ? 'text-red-700' : 'text-gray-400'">
           {{ totalVencidas }}
@@ -109,33 +146,72 @@ const propostasAtendente = computed(() =>
         <p class="text-xs mt-1" :class="totalVencidas > 0 ? 'text-red-600' : 'text-gray-400'">
           {{ totalVencidas > 0 ? formatMoney(totalEmAberto) : 'Tudo em dia!' }}
         </p>
-      </div>
+        <div class="mt-3 flex items-center justify-between text-xs font-medium" :class="totalVencidas > 0 ? 'text-red-700' : 'text-blue-600'">
+          <span>Ver detalhes</span>
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </div>
+      </button>
 
       <!-- Contratos -->
-      <div class="card">
+      <button
+        type="button"
+        aria-label="Ver seus contratos"
+        class="card w-full text-left min-h-[44px] hover:shadow-md hover:border-blue-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 transition-all"
+        @click="goToContratos"
+      >
         <p class="section-title text-xs">Contratos</p>
         <p class="text-2xl font-bold text-gray-900 mt-1">{{ contratosAtivos }}</p>
         <p class="text-xs text-gray-500 mt-1">Saldo: {{ formatMoney(saldoTotal) }}</p>
-      </div>
+        <div class="mt-3 flex items-center justify-between text-xs font-medium text-blue-600">
+          <span>Ver contratos</span>
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </div>
+      </button>
 
       <!-- Próximo vencimento -->
-      <div class="card">
+      <button
+        type="button"
+        :aria-label="proximoVencimento ? `Ver contrato do próximo vencimento em ${formatDate(proximoVencimento.vencimento)}` : 'Ver contratos'"
+        class="card w-full text-left min-h-[44px] hover:shadow-md hover:border-blue-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 transition-all"
+        @click="goToProximoVencimento"
+      >
         <p class="section-title text-xs">Próximo vencimento</p>
         <template v-if="proximoVencimento">
           <p class="text-lg font-bold text-gray-900 mt-1">{{ formatDate(proximoVencimento.vencimento) }}</p>
           <p class="text-xs text-gray-500 mt-1">{{ formatMoney(proximoVencimento.valor) }}</p>
         </template>
         <p v-else class="text-sm text-gray-400 mt-1">—</p>
-      </div>
+        <div class="mt-3 flex items-center justify-between text-xs font-medium text-blue-600">
+          <span>{{ proximoVencimento ? 'Ver contrato' : 'Ver contratos' }}</span>
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </div>
+      </button>
 
       <!-- Acordos -->
-      <div class="card">
+      <button
+        type="button"
+        aria-label="Ver suas negociações e acordos"
+        class="card w-full text-left min-h-[44px] hover:shadow-md hover:border-blue-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 transition-all"
+        @click="goToNegociacoes"
+      >
         <p class="section-title text-xs">Acordos</p>
         <p class="text-2xl font-bold text-gray-900 mt-1">{{ acordosAtivos }}</p>
         <p class="text-xs mt-1" :class="negsPendentes > 0 ? 'text-amber-600' : 'text-gray-400'">
           {{ negsPendentes > 0 ? `${negsPendentes} em análise` : 'Nenhum pendente' }}
         </p>
-      </div>
+        <div class="mt-3 flex items-center justify-between text-xs font-medium text-blue-600">
+          <span>Ver negociações</span>
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </div>
+      </button>
     </div>
 
     <!-- CTAs principais -->

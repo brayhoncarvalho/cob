@@ -1,6 +1,7 @@
 import { reactive } from 'vue'
 import initialNegotiations from '@/mocks/negotiations.json'
 import initialContracts    from '@/mocks/contracts.json'
+import { useRules } from '@/stores/rules.js'
 
 const STORAGE_KEY = 'portal_flow_v1'
 
@@ -55,11 +56,43 @@ const state = reactive(loadState() ?? freshState())
 // ── actions ──────────────────────────────────────────────────────────────────
 
 /**
- * Submete uma proposta nova do cliente.
- * proposalStatus: 'auto' | 'mesa' | 'mesa2'
+ * Verifica bloqueios de negócio antes de criar proposta.
+ * Retorna string com motivo do bloqueio ou null se ok.
  */
+function _verificarBloqueio(contratoId) {
+  const { rules } = useRules()
+
+  const negsDoContrato = state.negotiations.filter(n => n.contratoId === contratoId)
+
+  // Bloqueio por cooldown: acordo cancelado recentemente
+  const cancelada = negsDoContrato
+    .filter(n => n.status === 'cancelada' && n.dataCancelamento)
+    .sort((a, b) => b.dataCancelamento.localeCompare(a.dataCancelamento))[0]
+
+  if (cancelada) {
+    const diasDesde = (Date.now() - new Date(cancelada.dataCancelamento)) / 86400000
+    const cooldown  = rules.cooldownCancelamentoDias ?? 30
+    if (diasDesde < cooldown) {
+      const diasRestantes = Math.ceil(cooldown - diasDesde)
+      return `blocked_cooldown:${diasRestantes}`
+    }
+  }
+
+  // Bloqueio por limite de tentativas
+  const tentativas = negsDoContrato.filter(n =>
+    ['em_analise', 'contraproposta', 'em_pagamento', 'aprovada', 'reprovada', 'cancelada', 'quitado'].includes(n.status)
+  ).length
+  const maxTentativas = rules.maxTentativasNegociacao ?? 3
+  if (tentativas >= maxTentativas) {
+    return `blocked_tentativas:${maxTentativas}`
+  }
+
+  return null
+}
 function submitProposal({ id, contratoId, entrada, numParcelas, valorParcela,
                           totalAcordo, desconto, proposalStatus }) {
+  const bloqueio = _verificarBloqueio(contratoId)
+  if (bloqueio) return { error: bloqueio }
   const isAuto = proposalStatus === 'auto'
   const nivel  = proposalStatus === 'mesa2' ? 2 : 1
 
@@ -161,6 +194,20 @@ function markParcelaPaid(negId, parcelaIdx) {
   // Promove próxima futura para proxima
   const next = neg.parcelas.find((p, i) => i > parcelaIdx && p.status === 'futura')
   if (next) next.status = 'proxima'
+
+  // Verifica quitação total (todas as parcelas pagas)
+  const todasPagas = neg.parcelas.every(p => p.status === 'paga')
+  if (todasPagas) {
+    neg.status       = 'quitado'
+    neg.dataQuitacao = new Date().toISOString()
+    // Atualiza o contrato vinculado como quitado
+    const contrato = state.contracts.find(c => c.id === neg.contratoId)
+    if (contrato) {
+      contrato.status       = 'quitado'
+      contrato.dataQuitacao = new Date().toISOString()
+    }
+  }
+
   persist()
 }
 
@@ -178,6 +225,8 @@ function resetFlow() {
  */
 function submitAttendantProposal({ id, contratoId, clienteCpf, entrada, numParcelas, valorParcela,
                                    totalAcordo, desconto, atendenteCpf }) {
+  const bloqueio = _verificarBloqueio(contratoId)
+  if (bloqueio) return { error: bloqueio }
   state.negotiations = state.negotiations.filter(n =>
     n.contratoId !== contratoId || !['em_analise', 'contraproposta', 'pending_client_approval'].includes(n.status)
   )

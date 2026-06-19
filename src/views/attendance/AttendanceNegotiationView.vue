@@ -138,8 +138,38 @@ watch(numParcelas, () => {
   _syncingParcela = false
 }, { flush: 'sync' })
 
+// Bloqueios de negócio: cooldown e limite de tentativas
+const bloqueioNegocio = computed(() => {
+  const cid  = contratoSelecionado.value
+  if (!cid) return null
+  const negs = flowState.negotiations.filter(n => n.contratoId === cid)
+
+  // cooldown
+  const cancelada = negs
+    .filter(n => n.status === 'cancelada' && n.dataCancelamento)
+    .sort((a, b) => b.dataCancelamento.localeCompare(a.dataCancelamento))[0]
+  if (cancelada) {
+    const diasDesde = (Date.now() - new Date(cancelada.dataCancelamento)) / 86400000
+    const cooldown  = rules.cooldownCancelamentoDias ?? 30
+    if (diasDesde < cooldown) return { tipo: 'cooldown', diasRestantes: Math.ceil(cooldown - diasDesde) }
+  }
+
+  // limite de tentativas
+  const tentativas = negs.filter(n =>
+    ['em_analise','contraproposta','em_pagamento','aprovada','reprovada','cancelada','quitado'].includes(n.status)
+  ).length
+  const max = rules.maxTentativasNegociacao ?? 3
+  if (tentativas >= max) return { tipo: 'tentativas', max }
+
+  return null
+})
+
 // Feedback de bloqueio
 const bloqueio = computed(() => {
+  if (bloqueioNegocio.value?.tipo === 'cooldown')
+    return `Negociação bloqueada — aguardar ${bloqueioNegocio.value.diasRestantes} dia(s) após o cancelamento do acordo anterior.`
+  if (bloqueioNegocio.value?.tipo === 'tentativas')
+    return `Limite de ${bloqueioNegocio.value.max} tentativa(s) de negociação atingido para este contrato.`
   if (modoCalculo.value === 'parcela' && valorParcelaInput.value > maxParcelaInput.value)
     return `Com ${numParcelas.value} parcelas, o máximo por parcela é ${formatMoney(maxParcelaInput.value)} (total do acordo: ${formatMoney(totalAcordo.value)}).`
   if (entradaEfetiva.value <= 0)

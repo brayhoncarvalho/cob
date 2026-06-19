@@ -16,6 +16,9 @@ const alcada1NivelMax          = ref(rules.alcada1NivelMax)
 const parcelaMinimaValor       = ref(rules.parcelaMinimaValor)
 const prazoEntradaHoras        = ref(rules.prazoEntradaHoras)
 const cooldownCancelamentoDias = ref(rules.cooldownCancelamentoDias)
+const maxTentativasNegociacao  = ref(rules.maxTentativasNegociacao)
+const descontoAntecipacaoPct   = ref((rules.descontoAntecipacaoPct ?? 0.075) * 100)
+const atrasoMaxCancelamentoAcordoDias = ref(rules.atrasoMaxCancelamentoAcordoDias ?? 10)
 
 // Faixas de desconto
 const faixas = ref(
@@ -38,6 +41,9 @@ function salvar() {
     parcelaMinimaValor:        Number(parcelaMinimaValor.value),
     prazoEntradaHoras:         Number(prazoEntradaHoras.value),
     cooldownCancelamentoDias:  Number(cooldownCancelamentoDias.value),
+    maxTentativasNegociacao:   Number(maxTentativasNegociacao.value),
+    descontoAntecipacaoPct:    descontoAntecipacaoPct.value / 100,
+    atrasoMaxCancelamentoAcordoDias: Number(atrasoMaxCancelamentoAcordoDias.value),
     descontoMaxPorFaixa: Object.fromEntries(
       faixas.value.map(f => [f.faixa, f.valor / 100])
     ),
@@ -57,6 +63,9 @@ function restaurar() {
   parcelaMinimaValor.value       = rules.parcelaMinimaValor
   prazoEntradaHoras.value        = rules.prazoEntradaHoras
   cooldownCancelamentoDias.value = rules.cooldownCancelamentoDias
+  maxTentativasNegociacao.value  = rules.maxTentativasNegociacao
+  descontoAntecipacaoPct.value   = (rules.descontoAntecipacaoPct ?? 0.075) * 100
+  atrasoMaxCancelamentoAcordoDias.value = rules.atrasoMaxCancelamentoAcordoDias ?? 10
   faixas.value = Object.entries(rules.descontoMaxPorFaixa).map(([faixa, valor]) => ({
     faixa,
     valor: valor * 100,
@@ -183,6 +192,43 @@ const simEntrada = computed(() => {
               <input v-model.number="cooldownCancelamentoDias" type="range" min="7" max="90" step="1" class="flex-1 accent-[#2563eb]" />
               <span class="text-sm font-bold text-[#2563eb] w-12 text-right">{{ cooldownCancelamentoDias }}d</span>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SEÇÃO: NEGOCIAÇÃO E ACORDO ===== -->
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100 bg-gray-50">
+          <h3 class="font-semibold text-gray-900 flex items-center gap-2">
+            <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
+            Negociação e Acordo
+          </h3>
+          <p class="text-xs text-gray-500 mt-1">Regras que controlam tentativas, antecipação e cancelamento automático de acordos.</p>
+        </div>
+        <div class="p-5 grid sm:grid-cols-3 gap-5">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Limite de tentativas por contrato</label>
+            <div class="flex items-center gap-3">
+              <input v-model.number="maxTentativasNegociacao" type="range" min="1" max="10" step="1" class="flex-1 accent-amber-500" />
+              <span class="text-sm font-bold text-amber-600 w-10 text-right">{{ maxTentativasNegociacao }}x</span>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">Após {{ maxTentativasNegociacao }} proposta(s) por contrato, novas tentativas são bloqueadas.</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Desconto de antecipação (%)</label>
+            <div class="flex items-center gap-3">
+              <input v-model.number="descontoAntecipacaoPct" type="range" min="1" max="30" step="0.5" class="flex-1 accent-amber-500" />
+              <span class="text-sm font-bold text-amber-600 w-14 text-right">{{ descontoAntecipacaoPct }}%</span>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">Desconto sobre juros futuros ao antecipar parcelas.</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Cancelamento por atraso (dias)</label>
+            <div class="flex items-center gap-3">
+              <input v-model.number="atrasoMaxCancelamentoAcordoDias" type="range" min="3" max="30" step="1" class="flex-1 accent-amber-500" />
+              <span class="text-sm font-bold text-amber-600 w-10 text-right">{{ atrasoMaxCancelamentoAcordoDias }}d</span>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">Acordo cancelado automaticamente se parcela atrasar mais de {{ atrasoMaxCancelamentoAcordoDias }} dias.</p>
           </div>
         </div>
       </div>

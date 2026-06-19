@@ -130,6 +130,30 @@ const primeiroBoleto = computed(() => {
   return new Date(ano, mes - 1, diaVencimento.value).toLocaleDateString('pt-BR')
 })
 
+// Bloqueios de negócio: cooldown e limite de tentativas
+const bloqueioNegocio = computed(() => {
+  const negs = flowState.negotiations.filter(n => n.contratoId === contract.value?.id)
+
+  // cooldown
+  const cancelada = negs
+    .filter(n => n.status === 'cancelada' && n.dataCancelamento)
+    .sort((a, b) => b.dataCancelamento.localeCompare(a.dataCancelamento))[0]
+  if (cancelada) {
+    const diasDesde = (Date.now() - new Date(cancelada.dataCancelamento)) / 86400000
+    const cooldown  = rules.cooldownCancelamentoDias ?? 30
+    if (diasDesde < cooldown) return { tipo: 'cooldown', diasRestantes: Math.ceil(cooldown - diasDesde) }
+  }
+
+  // limite de tentativas
+  const tentativas = negs.filter(n =>
+    ['em_analise','contraproposta','em_pagamento','aprovada','reprovada','cancelada','quitado'].includes(n.status)
+  ).length
+  const max = rules.maxTentativasNegociacao ?? 3
+  if (tentativas >= max) return { tipo: 'tentativas', max }
+
+  return null
+})
+
 // Status da proposta
 const proposalStatus = computed(() => {
   if (modoCalculo.value === 'parcela' && valorParcelaInput.value > maxParcelaInput.value)
@@ -138,6 +162,8 @@ const proposalStatus = computed(() => {
   if (valorParcela.value < rules.parcelaMinimaValor)    return 'blocked_parcela'
   if (descontoReais.value > totalDue.value * 0.30)      return 'blocked_desconto'
   if (contract.value?.acordoAtivo)                      return 'blocked_acordo'
+  if (bloqueioNegocio.value?.tipo === 'cooldown')       return 'blocked_cooldown'
+  if (bloqueioNegocio.value?.tipo === 'tentativas')     return 'blocked_tentativas'
 
   const autoOk =
     entradaPct.value >= rules.entradaMinimaPct &&
@@ -157,6 +183,8 @@ const statusConfig = computed(() => ({
   blocked_max_parcela:{ icon: 'blocked', label: `Com ${numParcelas.value}x, a parcela máxima é ${formatMoney(maxParcelaInput.value)}. Reduza o valor ou aumente as parcelas.`, cls: 'alert-danger' },
   blocked_desconto:   { icon: 'blocked', label: 'Desconto excede o máximo permitido para seu atraso. Aumente a entrada.', cls: 'alert-danger' },
   blocked_acordo:     { icon: 'blocked', label: 'Você já possui um acordo ativo neste contrato.', cls: 'alert-danger' },
+  blocked_cooldown:   { icon: 'blocked', label: `Nova negociação bloqueada por ${bloqueioNegocio.value?.diasRestantes ?? rules.cooldownCancelamentoDias} dia(s) após cancelamento do acordo anterior.`, cls: 'alert-danger' },
+  blocked_tentativas: { icon: 'blocked', label: `Limite de ${bloqueioNegocio.value?.max ?? rules.maxTentativasNegociacao} tentativas de negociação atingido para este contrato.`, cls: 'alert-danger' },
 }[proposalStatus.value] ?? { icon: '', label: '', cls: '' }))
 
 const canSubmit = computed(() => !proposalStatus.value.startsWith('blocked'))

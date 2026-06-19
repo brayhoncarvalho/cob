@@ -30,6 +30,7 @@ const stepperStep = computed(() => {
   switch (negotiation.value?.status) {
     case 'em_pagamento': return 4
     case 'aprovada':     return 4
+    case 'quitado':      return 4
     case 'contraproposta': return 3
     case 'reprovada':    return 3
     case 'cancelada':    return 1
@@ -52,6 +53,73 @@ function pagarParcela(idx) {
     markParcelaPaid(negotiation.value.id, idx)
     pagandoIndex.value = null
   }, 1200)
+}
+
+// ── Pagamento: modal Pix/Boleto ───────────────────────────────────────────────
+const modalPagamento = ref(false)
+const modalIdxParcela = ref(null)        // índice da parcela selecionada (null = próxima vencida)
+const metodoPagamento = ref(null)        // 'pix' | 'boleto'
+
+function abrirModalPagamento(idx = null) {
+  modalIdxParcela.value = idx
+  metodoPagamento.value = null
+  modalPagamento.value  = true
+}
+
+function confirmarPagamento() {
+  const idx = modalIdxParcela.value ?? negotiation.value?.parcelas.findIndex(
+    p => p.status === 'proxima' || p.status === 'futura'
+  )
+  if (idx == null || idx < 0) return
+  if (metodoPagamento.value === 'pix') {
+    pagarParcela(idx)
+    modalPagamento.value = false
+  } else if (metodoPagamento.value === 'boleto') {
+    boletoAberto.value  = true
+    pagarParcelaBoleto(idx)
+    modalPagamento.value = false
+  }
+}
+
+// Boleto mockado
+const boletoAberto = ref(false)
+const boletoCopiado = ref(false)
+const boletoParcela = ref(null)
+
+const BOLETO_CODIGO = '23793.38128 60007.827136 98000.063308 3 00000000000000'
+
+function pagarParcelaBoleto(idx) {
+  boletoParcela.value = negotiation.value?.parcelas[idx] ?? null
+  boletoAberto.value  = true
+  pagandoIndex.value  = idx
+  setTimeout(() => {
+    markParcelaPaid(negotiation.value.id, idx)
+    pagandoIndex.value = null
+  }, 800)
+}
+
+function copiarBoleto() {
+  navigator.clipboard?.writeText(BOLETO_CODIGO).catch(() => {})
+  boletoCopiado.value = true
+  setTimeout(() => boletoCopiado.value = false, 2000)
+}
+
+function baixarBoleto() {
+  const conteudo =
+    `BOLETO BANCÁRIO — SIMULAÇÃO\n\n` +
+    `Beneficiário: Dock S.A. (00.000.000/0001-00)\n` +
+    `Sacado: ${boletoParcela.value?.titular ?? 'Cliente'}\n` +
+    `Vencimento: ${formatDate(boletoParcela.value?.vencimento)}\n` +
+    `Valor: ${formatMoney(boletoParcela.value?.valor)}\n\n` +
+    `Linha Digitável:\n${BOLETO_CODIGO}\n\n` +
+    `Instruções: Não receber após o vencimento.`
+  const blob = new Blob([conteudo], { type: 'text/plain' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = `boleto-${route.params.id}.txt`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 // Pix mockado
@@ -189,6 +257,16 @@ function copiarPix() {
             Tentar nova simulação →
           </RouterLink></span>
         </div>
+        <div v-if="negotiation.status === 'quitado'" class="mt-4 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-4 flex items-start gap-3">
+          <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+            <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div>
+            <p class="font-semibold text-emerald-800 text-sm">Parabéns! Acordo totalmente quitado.</p>
+            <p class="text-xs text-emerald-700 mt-0.5">Todas as parcelas foram pagas. Este contrato está encerrado.</p>
+            <RouterLink to="/contratos" class="block mt-2 text-xs font-semibold text-emerald-700 hover:underline">Ver meus contratos →</RouterLink>
+          </div>
+        </div>
       </div>
 
       <!-- Parcelas do acordo (se em pagamento) -->
@@ -223,7 +301,7 @@ function copiarPix() {
                 <td class="py-2.5 text-right">
                   <template v-if="p.status === 'proxima' || p.status === 'futura'">
                     <button
-                      @click="pagarParcela(idx)"
+                      @click="abrirModalPagamento(idx)"
                       :disabled="pagandoIndex === idx"
                       class="text-xs font-semibold text-blue-600 hover:underline disabled:opacity-50"
                     >
@@ -240,20 +318,90 @@ function copiarPix() {
 
       <!-- Ações de pagamento -->
       <div v-if="negotiation.status === 'em_pagamento'" class="flex flex-wrap gap-3">
-        <RouterLink
-          :to="`/contratos/${negotiation.contratoId}/pagar`"
-          class="btn-primary"
-        >
-          Pagar Próxima via Pix
-        </RouterLink>
-        <button class="btn-secondary flex items-center gap-1.5">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
-          Baixar Boleto
+        <button @click="abrirModalPagamento()" class="btn-primary flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/></svg>
+          Pagar Próxima Parcela
         </button>
         <button @click="copiarPix" :class="pixCopiado ? 'btn-success' : 'btn-secondary'">
           {{ pixCopiado ? 'Copiado!' : 'Copiar Código Pix' }}
         </button>
       </div>
+
+      <!-- Boleto aberto -->
+      <div v-if="boletoAberto && boletoParcela" class="card border-amber-200 bg-amber-50">
+        <div class="flex items-start justify-between mb-3">
+          <div>
+            <h3 class="font-semibold text-gray-900 flex items-center gap-2">
+              <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+              Boleto Bancário
+            </h3>
+            <p class="text-xs text-gray-500 mt-0.5">Vencimento: {{ formatDate(boletoParcela.vencimento) }} &bull; Valor: {{ formatMoney(boletoParcela.valor) }}</p>
+          </div>
+          <button @click="boletoAberto = false" class="text-gray-400 hover:text-gray-600" aria-label="Fechar boleto">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <!-- Código de barras visual (mockado) -->
+        <div class="bg-white rounded-lg p-3 mb-3 flex justify-center">
+          <div class="flex items-end gap-px h-12" aria-hidden="true">
+            <template v-for="(w, i) in [3,1,2,1,4,1,2,3,1,1,2,4,1,3,2,1,1,3,4,1,2,1,3,1,2,4,1,1,3,2,1,4,3,1,2,1,3,1,4,2,1,3,1,2]" :key="i">
+              <div class="bg-gray-800" :style="{ width: w + 'px', height: (i % 5 === 0 ? 100 : 80) + '%' }" />
+            </template>
+          </div>
+        </div>
+        <!-- Linha digitável -->
+        <div class="bg-white rounded-lg px-4 py-3 font-mono text-sm text-gray-800 break-all mb-3 select-all">
+          {{ BOLETO_CODIGO }}
+        </div>
+        <div class="flex gap-2">
+          <button @click="copiarBoleto" :class="boletoCopiado ? 'btn-success' : 'btn-secondary'" class="flex-1 flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"/></svg>
+            {{ boletoCopiado ? 'Copiado!' : 'Copiar linha digitável' }}
+          </button>
+          <button @click="baixarBoleto" class="btn-secondary flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+            Baixar
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal: escolha de método de pagamento -->
+      <Teleport to="body">
+        <Transition enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0" leave-active-class="transition-opacity duration-200" leave-to-class="opacity-0">
+          <div v-if="modalPagamento" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 pb-4 sm:pb-0" role="dialog" aria-modal="true" aria-labelledby="modal-pag-title">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+              <h3 id="modal-pag-title" class="text-base font-semibold text-gray-900 mb-1">Escolha a forma de pagamento</h3>
+              <p class="text-sm text-gray-500 mb-4">Como você prefere pagar esta parcela?</p>
+              <div class="grid grid-cols-2 gap-3 mb-5">
+                <button
+                  @click="metodoPagamento = 'pix'"
+                  :class="metodoPagamento === 'pix' ? 'ring-2 ring-blue-600 bg-blue-50' : 'bg-gray-50 hover:bg-gray-100'"
+                  class="rounded-xl p-4 flex flex-col items-center gap-2 transition-all"
+                >
+                  <svg class="w-8 h-8 text-blue-600" viewBox="0 0 24 24" fill="currentColor"><path d="M11.3 2.4a1.2 1.2 0 011.4 0l7.2 5.2c.4.3.6.7.6 1.2v6.4c0 .5-.2.9-.6 1.2l-7.2 5.2a1.2 1.2 0 01-1.4 0L4.1 16.4A1.2 1.2 0 013.5 15V8.8c0-.5.2-.9.6-1.2L11.3 2.4z"/></svg>
+                  <span class="text-sm font-semibold text-gray-800">Pix</span>
+                  <span class="text-xs text-gray-400">Aprovação imediata</span>
+                </button>
+                <button
+                  @click="metodoPagamento = 'boleto'"
+                  :class="metodoPagamento === 'boleto' ? 'ring-2 ring-amber-500 bg-amber-50' : 'bg-gray-50 hover:bg-gray-100'"
+                  class="rounded-xl p-4 flex flex-col items-center gap-2 transition-all"
+                >
+                  <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                  <span class="text-sm font-semibold text-gray-800">Boleto</span>
+                  <span class="text-xs text-gray-400">Vence em 1 dia útil</span>
+                </button>
+              </div>
+              <div class="flex gap-3">
+                <button @click="modalPagamento = false" class="btn-secondary flex-1">Cancelar</button>
+                <button @click="confirmarPagamento" :disabled="!metodoPagamento" class="btn-primary flex-1 disabled:opacity-40">
+                  Continuar
+                </button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
 
       <!-- Proposta em análise — info -->
       <div v-if="negotiation.status === 'em_analise'" class="card">

@@ -7,6 +7,9 @@
   "parcelaMinimaValor": 100,
   "prazoEntradaHoras": 48,
   "cooldownCancelamentoDias": 30,
+  "maxTentativasNegociacao": 3,
+  "descontoAntecipacaoPct": 0.075,
+  "atrasoMaxCancelamentoAcordoDias": 10,
   "descontoMaxPorFaixa": {
     "0-30": 0.00,
     "31-60": 0.05,

@@ -4,11 +4,13 @@ import { useRoute, useRouter } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
 import { useFlow } from '@/stores/flow.js'
+import { useRules } from '@/stores/rules.js'
 
 const route  = useRoute()
 const router = useRouter()
 const { formatMoney, formatDate } = useFormatters()
 const { state: flowState } = useFlow()
+const { rules } = useRules()
 
 const contract = computed(() => flowState.contracts.find(c => c.id === route.params.id))
 
@@ -23,14 +25,16 @@ function toggleParcela(num) {
   else selecionadas.value.add(num)
 }
 
-// Desconto simulado: 7.5% dos juros futuros por parcela selecionada (simplificado)
-const DESCONTO_POR_PARCELA = 0.075
+// Desconto: configurado em Parâmetros (descontoAntecipacaoPct) aplicado por parcela selecionada
 const valorOriginal = computed(() =>
   parcelasFuturas.value
     .filter(p => selecionadas.value.has(p.numero))
     .reduce((s, p) => s + p.valor, 0)
 )
-const desconto = computed(() => valorOriginal.value * DESCONTO_POR_PARCELA * Math.sqrt(selecionadas.value.size))
+const desconto = computed(() => {
+  const pct = rules.descontoAntecipacaoPct ?? 0.075
+  return valorOriginal.value * pct * Math.sqrt(selecionadas.value.size)
+})
 const valorFinal = computed(() => Math.max(0, valorOriginal.value - desconto.value))
 
 function gerarPix() {
