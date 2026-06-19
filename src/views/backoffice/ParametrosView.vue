@@ -19,6 +19,7 @@ const cooldownCancelamentoDias = ref(rules.cooldownCancelamentoDias)
 const maxTentativasNegociacao  = ref(rules.maxTentativasNegociacao)
 const descontoAntecipacaoPct   = ref((rules.descontoAntecipacaoPct ?? 0.075) * 100)
 const atrasoMaxCancelamentoAcordoDias = ref(rules.atrasoMaxCancelamentoAcordoDias ?? 10)
+const metaRecuperacaoPct = ref(Math.round((rules.metaRecuperacaoPct ?? 0.80) * 100))
 
 // Faixas de desconto
 const faixas = ref(
@@ -44,6 +45,7 @@ function salvar() {
     maxTentativasNegociacao:   Number(maxTentativasNegociacao.value),
     descontoAntecipacaoPct:    descontoAntecipacaoPct.value / 100,
     atrasoMaxCancelamentoAcordoDias: Number(atrasoMaxCancelamentoAcordoDias.value),
+    metaRecuperacaoPct:              metaRecuperacaoPct.value / 100,
     descontoMaxPorFaixa: Object.fromEntries(
       faixas.value.map(f => [f.faixa, f.valor / 100])
     ),
@@ -66,6 +68,7 @@ function restaurar() {
   maxTentativasNegociacao.value  = rules.maxTentativasNegociacao
   descontoAntecipacaoPct.value   = (rules.descontoAntecipacaoPct ?? 0.075) * 100
   atrasoMaxCancelamentoAcordoDias.value = rules.atrasoMaxCancelamentoAcordoDias ?? 10
+  metaRecuperacaoPct.value = Math.round((rules.metaRecuperacaoPct ?? 0.80) * 100)
   faixas.value = Object.entries(rules.descontoMaxPorFaixa).map(([faixa, valor]) => ({
     faixa,
     valor: valor * 100,
@@ -229,8 +232,14 @@ const simEntrada = computed(() => {
               <span class="text-sm font-bold text-amber-600 w-10 text-right">{{ atrasoMaxCancelamentoAcordoDias }}d</span>
             </div>
             <p class="text-xs text-gray-400 mt-1">Acordo cancelado automaticamente se parcela atrasar mais de {{ atrasoMaxCancelamentoAcordoDias }} dias.</p>
-          </div>
-        </div>
+          </div>          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Meta de recuperação (%)</label>
+            <div class="flex items-center gap-3">
+              <input v-model.number="metaRecuperacaoPct" type="range" min="10" max="100" step="5" class="flex-1 accent-amber-500" />
+              <span class="text-sm font-bold text-amber-600 w-10 text-right">{{ metaRecuperacaoPct }}%</span>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">Meta da barra de progresso no painel do gerente.</p>
+          </div>        </div>
       </div>
 
       <!-- ===== SEÇÃO: DESCONTOS POR FAIXA ===== -->

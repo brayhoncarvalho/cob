@@ -282,19 +282,16 @@ function submit() {
             </div>
 
             <!-- Toggle: modo de cálculo -->
-            <div class="flex rounded-xl border border-gray-200 overflow-hidden mb-5">
-              <button
-                type="button"
-                class="flex-1 py-2 text-sm font-medium transition-colors"
-                :class="modoCalculo === 'entrada' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50'"
-                @click="onModoCalculo('entrada')"
-              >Definir entrada</button>
-              <button
-                type="button"
-                class="flex-1 py-2 text-sm font-medium transition-colors border-l border-gray-200"
-                :class="modoCalculo === 'parcela' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50'"
-                @click="onModoCalculo('parcela')"
-              >Definir parcela</button>
+            <div class="flex items-center gap-4 mb-5">
+              <span class="text-xs font-medium text-gray-500 shrink-0">Quero montar por:</span>
+              <label class="flex items-center gap-1.5 cursor-pointer select-none">
+                <input type="radio" name="modoCalculo" value="entrada" :checked="modoCalculo === 'entrada'" @change="onModoCalculo('entrada')" class="accent-indigo-600" />
+                <span class="text-sm" :class="modoCalculo === 'entrada' ? 'text-indigo-700 font-semibold' : 'text-gray-600'">Entrada</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer select-none">
+                <input type="radio" name="modoCalculo" value="parcela" :checked="modoCalculo === 'parcela'" @change="onModoCalculo('parcela')" class="accent-indigo-600" />
+                <span class="text-sm" :class="modoCalculo === 'parcela' ? 'text-indigo-700 font-semibold' : 'text-gray-600'">Parcela mensal</span>
+              </label>
             </div>
 
             <!-- Entrada (modo entrada-first) -->

@@ -5,10 +5,12 @@ import BackofficeLayout from '@/layouts/BackofficeLayout.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
 import { useFlow } from '@/stores/flow.js'
+import { useRules } from '@/stores/rules.js'
 
 const router = useRouter()
 const { formatMoney, formatDateTime } = useFormatters()
 const { state: flowState } = useFlow()
+const { rules } = useRules()
 
 // 2º Nível: propostas escaladas (nivel=2, em_analise)
 const escaladas = computed(() =>
@@ -20,13 +22,45 @@ const escaladas = computed(() =>
     }))
 )
 
-// Métricas gerenciais
-const totalRecuperado = 13200   // NEG-2026-4300
-const totalPendente   = computed(() =>
+// Métricas gerenciais calculadas do flow state
+const totalPendente = computed(() =>
   escaladas.value.reduce((s, n) => s + (n.contrato?.saldoDevedor ?? 0), 0)
 )
-const taxaAutoAprovacao = 33 // % mockado
-const txRecuperacao     = 67 // % mockado
+const totalRecuperado = computed(() =>
+  flowState.negotiations
+    .filter(n => n.status === 'em_pagamento' || n.status === 'quitado')
+    .reduce((s, n) => s + (n.totalAcordo ?? 0), 0)
+)
+const todasPropostas = computed(() =>
+  flowState.negotiations.filter(n =>
+    ['em_analise', 'em_pagamento', 'aprovada', 'reprovada', 'cancelada', 'contraproposta', 'quitado'].includes(n.status)
+  )
+)
+const propostasAprovadas = computed(() =>
+  flowState.negotiations.filter(n =>
+    ['em_pagamento', 'aprovada', 'quitado'].includes(n.status)
+  )
+)
+const propostasReprovadas = computed(() =>
+  flowState.negotiations.filter(n => n.status === 'reprovada')
+)
+const propostasAuto = computed(() =>
+  propostasAprovadas.value.filter(n =>
+    n.dataAprovacao && n.dataEnvio &&
+    new Date(n.dataAprovacao).getTime() - new Date(n.dataEnvio).getTime() < 60000
+  )
+)
+const taxaAutoAprovacao = computed(() =>
+  todasPropostas.value.length > 0
+    ? Math.round((propostasAuto.value.length / todasPropostas.value.length) * 100)
+    : 0
+)
+const txRecuperacao = computed(() =>
+  todasPropostas.value.length > 0
+    ? Math.round((propostasAprovadas.value.length / todasPropostas.value.length) * 100)
+    : 0
+)
+const metaPct = computed(() => Math.round((rules.metaRecuperacaoPct ?? 0.80) * 100))
 </script>
 
 <template>
@@ -113,15 +147,15 @@ const txRecuperacao     = 67 // % mockado
       <h2 class="font-semibold text-gray-900 mb-4">Performance da operação (mês atual)</h2>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="text-center">
-          <div class="text-2xl font-bold text-gray-900">8</div>
+          <div class="text-2xl font-bold text-gray-900">{{ todasPropostas.length }}</div>
           <div class="text-xs text-gray-500 mt-0.5">Propostas recebidas</div>
         </div>
         <div class="text-center">
-          <div class="text-2xl font-bold text-green-600">5</div>
+          <div class="text-2xl font-bold text-green-600">{{ propostasAprovadas.length }}</div>
           <div class="text-xs text-gray-500 mt-0.5">Aprovadas</div>
         </div>
         <div class="text-center">
-          <div class="text-2xl font-bold text-red-500">2</div>
+          <div class="text-2xl font-bold text-red-500">{{ propostasReprovadas.length }}</div>
           <div class="text-xs text-gray-500 mt-0.5">Reprovadas</div>
         </div>
         <div class="text-center">
@@ -134,11 +168,19 @@ const txRecuperacao     = 67 // % mockado
       <div class="mt-4">
         <div class="flex justify-between text-xs text-gray-500 mb-1">
           <span>Meta mensal de recuperação</span>
-          <span>{{ txRecuperacao }}% / 80%</span>
+          <span :class="txRecuperacao >= metaPct ? 'text-green-600 font-semibold' : ''">
+            {{ txRecuperacao }}% / {{ metaPct }}%
+          </span>
         </div>
         <div class="w-full bg-gray-100 rounded-full h-2">
-          <div class="bg-blue-500 h-2 rounded-full" :style="{ width: txRecuperacao + '%' }" />
+          <div
+            class="h-2 rounded-full transition-all duration-500"
+            :class="txRecuperacao >= metaPct ? 'bg-green-500' : txRecuperacao >= metaPct * 0.7 ? 'bg-blue-500' : 'bg-amber-400'"
+            :style="{ width: Math.min(txRecuperacao, 100) + '%' }"
+          />
         </div>
+        <p v-if="txRecuperacao >= metaPct" class="text-xs text-green-600 font-medium mt-1">Meta atingida ✓</p>
+        <p v-else class="text-xs text-gray-400 mt-1">Faltam {{ metaPct - txRecuperacao }}pp para a meta.</p>
       </div>
     </div>
 

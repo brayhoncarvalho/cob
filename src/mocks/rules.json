@@ -10,6 +10,7 @@
   "maxTentativasNegociacao": 3,
   "descontoAntecipacaoPct": 0.075,
   "atrasoMaxCancelamentoAcordoDias": 10,
+  "metaRecuperacaoPct": 0.80,
   "descontoMaxPorFaixa": {
     "0-30": 0.00,
     "31-60": 0.05,
