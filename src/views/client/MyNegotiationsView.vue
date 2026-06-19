@@ -52,13 +52,13 @@ function goAction(n) {
         :key="n.id"
         class="card hover:shadow-md transition-shadow cursor-pointer"
         :class="[
-          n.status === 'contraproposta' ? 'border-2 border-purple-300 bg-purple-50' : '',
+          n.status === 'contraproposta' ? 'border-2 border-amber-300 bg-amber-50' : '',
           ['quitado', 'cancelada'].includes(n.status) ? 'opacity-60' : '',
         ]"
         @click="goAction(n)"
       >
         <!-- Banner especial para contraproposta -->
-        <div v-if="n.status === 'contraproposta'" class="flex items-center gap-2 -mt-1 mb-3 text-purple-700">
+        <div v-if="n.status === 'contraproposta'" class="flex items-center gap-2 -mt-1 mb-3 text-amber-700">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
           <span class="font-bold text-sm">Nova oferta disponível! Temos uma contraproposta para você.</span>
         </div>
@@ -92,7 +92,7 @@ function goAction(n) {
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
               Prazo de resposta: {{ formatDateTime(n.prazoResposta) }}
             </div>
-            <div v-if="n.status === 'em_pagamento'" class="mt-2 text-xs text-teal-700 font-medium flex items-center gap-1">
+            <div v-if="n.status === 'em_pagamento'" class="mt-2 text-xs text-blue-700 font-medium flex items-center gap-1">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
               Próximo vencimento: {{ formatDate(n.parcelas?.find(p => p.status === 'proxima')?.vencimento) }}
             </div>
@@ -101,10 +101,10 @@ function goAction(n) {
               {{ n.motivo }}
             </div>
             <!-- Detalhes da contraproposta -->
-            <div v-if="n.status === 'contraproposta' && n.contraproposta" class="mt-2 bg-white rounded-lg p-2.5 border border-purple-200 text-xs text-purple-900 grid grid-cols-3 gap-2">
-              <div><span class="text-purple-500">Entrada</span><br><span class="font-bold">{{ formatMoney(n.contraproposta.entrada) }}</span></div>
-              <div><span class="text-purple-500">Parcelas</span><br><span class="font-bold">{{ n.contraproposta.numParcelas }}x {{ formatMoney(n.contraproposta.valorParcela) }}</span></div>
-              <div><span class="text-purple-500">Total</span><br><span class="font-bold">{{ formatMoney(n.contraproposta.total) }}</span></div>
+            <div v-if="n.status === 'contraproposta' && n.contraproposta" class="mt-2 bg-white rounded-lg p-2.5 border border-amber-200 text-xs text-amber-900 grid grid-cols-3 gap-2">
+              <div><span class="text-amber-500">Entrada</span><br><span class="font-bold">{{ formatMoney(n.contraproposta.entrada) }}</span></div>
+              <div><span class="text-amber-500">Parcelas</span><br><span class="font-bold">{{ n.contraproposta.numParcelas }}x {{ formatMoney(n.contraproposta.valorParcela) }}</span></div>
+              <div><span class="text-amber-500">Total</span><br><span class="font-bold">{{ formatMoney(n.contraproposta.total) }}</span></div>
             </div>
           </div>
 
@@ -114,7 +114,7 @@ function goAction(n) {
             </svg>
             <span
               class="text-xs font-medium whitespace-nowrap"
-              :class="n.status === 'contraproposta' ? 'text-purple-700 font-bold' : 'text-blue-600'"
+              :class="n.status === 'contraproposta' ? 'text-amber-700 font-bold' : 'text-blue-600'"
             >
               {{ actionLabel[n.status] ?? 'Ver' }}
             </span>

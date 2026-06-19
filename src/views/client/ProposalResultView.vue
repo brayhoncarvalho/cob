@@ -207,10 +207,10 @@ function handleAcceptCounter() {
         <template v-else-if="scenario === 'reprovada' || scenario === 'contraproposta'">
           <div class="card text-center py-8 mb-6">
             <div class="flex justify-center mb-4">
-              <svg v-if="scenario === 'contraproposta'" class="w-14 h-14 text-purple-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
+              <svg v-if="scenario === 'contraproposta'" class="w-14 h-14 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
               <svg v-else class="w-14 h-14 text-red-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
-            <h2 class="text-2xl font-bold mb-2" :class="scenario === 'contraproposta' ? 'text-purple-700' : 'text-red-700'">
+            <h2 class="text-2xl font-bold mb-2" :class="scenario === 'contraproposta' ? 'text-amber-700' : 'text-red-700'">
               {{ scenario === 'contraproposta' ? 'Temos uma Contraproposta!' : 'Proposta Não Aprovada' }}
             </h2>
             <p class="text-gray-600">
@@ -221,28 +221,28 @@ function handleAcceptCounter() {
           </div>
 
           <!-- Contraproposta REAL do flow store -->
-          <div v-if="scenario === 'contraproposta' && contrapropostaReal" class="card mb-4 border-purple-200 bg-purple-50">
-            <h3 class="font-semibold text-purple-800 mb-3">Condição especial oferecida</h3>
+          <div v-if="scenario === 'contraproposta' && contrapropostaReal" class="card mb-4 border-amber-200 bg-amber-50">
+            <h3 class="font-semibold text-amber-800 mb-3">Condição especial oferecida</h3>
             <div class="space-y-2 text-sm">
               <div class="flex justify-between">
-                <span class="text-purple-700">Nova entrada</span>
-                <span class="font-bold text-purple-900">{{ formatMoney(contrapropostaReal.entrada) }}</span>
+                <span class="text-amber-700">Nova entrada</span>
+                <span class="font-bold text-amber-900">{{ formatMoney(contrapropostaReal.entrada) }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-purple-700">Parcelas</span>
-                <span class="font-medium text-purple-900">{{ contrapropostaReal.numParcelas }}x de {{ formatMoney(contrapropostaReal.valorParcela) }}</span>
+                <span class="text-amber-700">Parcelas</span>
+                <span class="font-medium text-amber-900">{{ contrapropostaReal.numParcelas }}x de {{ formatMoney(contrapropostaReal.valorParcela) }}</span>
               </div>
-              <div class="border-t border-purple-200 pt-2 flex justify-between">
-                <span class="font-semibold text-purple-800">Total</span>
-                <span class="font-bold text-purple-900">{{ formatMoney(contrapropostaReal.total) }}</span>
+              <div class="border-t border-amber-200 pt-2 flex justify-between">
+                <span class="font-semibold text-amber-800">Total</span>
+                <span class="font-bold text-amber-900">{{ formatMoney(contrapropostaReal.total) }}</span>
               </div>
             </div>
-            <button @click="handleAcceptCounter" class="btn-primary w-full mt-4 text-sm bg-purple-600 hover:bg-purple-700">Aceitar Contraproposta</button>
+            <button @click="handleAcceptCounter" class="btn-primary w-full mt-4 text-sm bg-amber-600 hover:bg-amber-700">Aceitar Contraproposta</button>
           </div>
 
           <!-- Fallback se contraproposta ainda não chegou -->
-          <div v-else-if="scenario === 'contraproposta' && !contrapropostaReal" class="card mb-4 border-purple-200 bg-purple-50 text-center py-4">
-            <p class="text-purple-700 text-sm">Carregando detalhes da contraproposta…</p>
+          <div v-else-if="scenario === 'contraproposta' && !contrapropostaReal" class="card mb-4 border-amber-200 bg-amber-50 text-center py-4">
+            <p class="text-amber-700 text-sm">Carregando detalhes da contraproposta…</p>
           </div>
 
           <div class="space-y-3">

@@ -285,12 +285,12 @@ function submit() {
             <div class="flex items-center gap-4 mb-5">
               <span class="text-xs font-medium text-gray-500 shrink-0">Quero montar por:</span>
               <label class="flex items-center gap-1.5 cursor-pointer select-none">
-                <input type="radio" name="modoCalculo" value="entrada" :checked="modoCalculo === 'entrada'" @change="onModoCalculo('entrada')" class="accent-indigo-600" />
-                <span class="text-sm" :class="modoCalculo === 'entrada' ? 'text-indigo-700 font-semibold' : 'text-gray-600'">Entrada</span>
+                <input type="radio" name="modoCalculo" value="entrada" :checked="modoCalculo === 'entrada'" @change="onModoCalculo('entrada')" class="accent-blue-600" />
+                <span class="text-sm" :class="modoCalculo === 'entrada' ? 'text-blue-700 font-semibold' : 'text-gray-600'">Entrada</span>
               </label>
               <label class="flex items-center gap-1.5 cursor-pointer select-none">
-                <input type="radio" name="modoCalculo" value="parcela" :checked="modoCalculo === 'parcela'" @change="onModoCalculo('parcela')" class="accent-indigo-600" />
-                <span class="text-sm" :class="modoCalculo === 'parcela' ? 'text-indigo-700 font-semibold' : 'text-gray-600'">Parcela mensal</span>
+                <input type="radio" name="modoCalculo" value="parcela" :checked="modoCalculo === 'parcela'" @change="onModoCalculo('parcela')" class="accent-blue-600" />
+                <span class="text-sm" :class="modoCalculo === 'parcela' ? 'text-blue-700 font-semibold' : 'text-gray-600'">Parcela mensal</span>
               </label>
             </div>
 
@@ -386,7 +386,7 @@ function submit() {
         <div class="order-first lg:order-last space-y-4">
 
           <!-- Banner desconto pré-aprovado -->
-          <div v-if="descontoPct > 0" class="rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 shadow">
+          <div v-if="descontoPct > 0" class="rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white p-4 shadow">
             <div class="flex items-start gap-3">
               <div class="text-2xl mt-0.5">🎉</div>
               <div>

@@ -74,12 +74,12 @@ function reject() {
       <!-- Proposta para decidir -->
       <template v-else-if="negotiation.status === 'pending_client_approval'">
         <!-- Cabeçalho informativo -->
-        <div class="card mb-5 bg-teal-50 border border-teal-100">
+        <div class="card mb-5 bg-blue-50 border border-blue-100">
           <div class="flex items-start gap-3">
-            <svg class="w-6 h-6 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <svg class="w-6 h-6 text-blue-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             <div>
-              <p class="font-semibold text-teal-900">Proposta preparada pelo nosso atendente</p>
-              <p class="text-xs text-teal-600 mt-0.5">
+              <p class="font-semibold text-blue-900">Proposta preparada pelo nosso atendente</p>
+              <p class="text-xs text-blue-600 mt-0.5">
                 Nosso atendente preparou uma proposta especial para você.
                 Analise com cuidado e decida se deseja aceitar.
               </p>

@@ -78,7 +78,7 @@ function totalVencidoContrato(c) {
               <div class="w-full bg-gray-100 rounded-full h-1.5">
                 <div
                   class="h-1.5 rounded-full transition-all"
-                  :class="c.status === 'quitado' ? 'bg-emerald-500' : c.status === 'em_atraso' ? 'bg-red-400' : 'bg-blue-500'"
+                  :class="c.status === 'quitado' ? 'bg-green-500' : c.status === 'em_atraso' ? 'bg-red-400' : 'bg-blue-500'"
                   :style="{ width: `${(c.parcelasPagas / c.totalParcelas) * 100}%` }"
                 />
               </div>

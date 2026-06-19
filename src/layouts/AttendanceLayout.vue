@@ -42,12 +42,12 @@ defineProps({
 <template>
   <div class="min-h-screen bg-gray-100">
     <!-- Header -->
-    <header class="bg-teal-800 text-white sticky top-0 z-40">
+    <header class="bg-blue-700 text-white sticky top-0 z-40">
       <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <div class="flex items-center gap-4">
           <RouterLink to="/atendimento" class="flex items-center gap-2">
             <img :src="baseUrl + 'dock.png'" alt="Logo" class="h-7 w-auto brightness-0 invert" />
-            <span class="text-sm font-semibold text-teal-100">Atendimento</span>
+            <span class="text-sm font-semibold text-blue-100">Atendimento</span>
           </RouterLink>
         </div>
 
@@ -55,16 +55,16 @@ defineProps({
         <div class="relative">
           <button
             @click="showDropdown = !showDropdown"
-            class="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-teal-700 transition-colors"
+            class="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-blue-600 transition-colors"
           >
-            <div class="w-8 h-8 rounded-full bg-teal-400 flex items-center justify-center shrink-0">
-              <span class="text-xs font-bold text-teal-900 leading-none">{{ userInitials }}</span>
+            <div class="w-8 h-8 rounded-full bg-blue-400 flex items-center justify-center shrink-0">
+              <span class="text-xs font-bold text-blue-900 leading-none">{{ userInitials }}</span>
             </div>
             <div class="hidden sm:block text-left">
               <p class="text-sm font-medium text-white leading-none">{{ state.user?.nome?.split(' ')[0] }}</p>
-              <p class="text-xs text-teal-300 mt-0.5">Atendente</p>
+              <p class="text-xs text-blue-300 mt-0.5">Atendente</p>
             </div>
-            <svg class="hidden sm:block w-3.5 h-3.5 text-teal-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            <svg class="hidden sm:block w-3.5 h-3.5 text-blue-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
           </button>
 
           <div

@@ -82,7 +82,7 @@ async function confirmar() {
       <div class="bg-white rounded-2xl border border-gray-200 p-8">
         <div class="mb-4 flex justify-center">
           <svg v-if="decisao === 'aprovar'" class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <svg v-else-if="decisao === 'contraproposta'" class="w-12 h-12 text-purple-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
+          <svg v-else-if="decisao === 'contraproposta'" class="w-12 h-12 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
           <svg v-else class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
         <h2 class="text-xl font-bold text-gray-900 mb-2">Decisão registrada</h2>
@@ -131,7 +131,7 @@ async function confirmar() {
               <button
                 v-for="d in [{ key: 'aprovar', label: 'Aprovar', cls: 'border-green-300 bg-green-50 text-green-700', iconPath: 'M4.5 12.75l6 6 9-13.5' },
                               { key: 'reprovar', label: 'Reprovar', cls: 'border-red-300 bg-red-50 text-red-700', iconPath: 'M6 18L18 6M6 6l12 12' },
-                              { key: 'contraproposta', label: 'Contraproposta', cls: 'border-purple-300 bg-purple-50 text-purple-700', iconPath: 'M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3' }]"
+                              { key: 'contraproposta', label: 'Contraproposta', cls: 'border-amber-300 bg-amber-50 text-amber-700', iconPath: 'M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3' }]"
                 :key="d.key"
                 @click="decisao = d.key"
                 :class="['w-full p-3 rounded-xl border-2 text-sm font-semibold transition-all flex items-center justify-center gap-1.5', decisao === d.key ? d.cls : 'border-gray-200 text-gray-600 hover:border-gray-300']"
@@ -162,12 +162,12 @@ async function confirmar() {
                 <input v-model="contraParcelas" type="number" min="1" max="24" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <!-- Valor parcela calculado automaticamente -->
-              <div class="rounded-lg bg-purple-50 border border-purple-200 px-3 py-2">
-                <p class="text-xs text-purple-600 mb-0.5">Valor da parcela (calculado)</p>
-                <p class="font-bold text-purple-800 text-sm">
+              <div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+                <p class="text-xs text-amber-600 mb-0.5">Valor da parcela (calculado)</p>
+                <p class="font-bold text-amber-800 text-sm">
                   {{ contraValorParc > 0 ? formatMoney(contraValorParc) : '—' }}
                 </p>
-                <p class="text-xs text-purple-400 mt-0.5">
+                <p class="text-xs text-amber-400 mt-0.5">
                   Total: {{ formatMoney(neg.totalAcordo) }} − Entrada: {{ formatMoney(Number(contraEntrada) || 0) }} ÷ {{ contraParcelas || '?' }}x
                 </p>
               </div>

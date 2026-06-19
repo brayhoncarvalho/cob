@@ -122,7 +122,7 @@ const metricas = computed(() => [
 
 // Urgência → config visual
 const URGENCIA_CONFIG = {
-  3: { border: 'border-l-4 border-purple-400', badge: 'bg-purple-100 text-purple-700', texto: 'Aguardando aprovação', dot: 'bg-purple-400 animate-pulse' },
+  3: { border: 'border-l-4 border-amber-400', badge: 'bg-amber-100 text-amber-700', texto: 'Aguardando aprovação', dot: 'bg-amber-400 animate-pulse' },
   2: { border: 'border-l-4 border-red-400',    badge: 'bg-red-100 text-red-700',    texto: 'Contrato em atraso',     dot: 'bg-red-400' },
   1: { border: 'border-l-4 border-amber-300',  badge: 'bg-amber-100 text-amber-700', texto: 'Proposta em análise',    dot: 'bg-amber-400' },
   0: { border: '',                              badge: '',                             texto: '',                       dot: 'bg-gray-300' },
@@ -130,7 +130,7 @@ const URGENCIA_CONFIG = {
 
 const COR_METRICA = {
   blue:   { bg: 'bg-blue-50 hover:bg-blue-100',   text: 'text-blue-700',   ring: 'ring-blue-400',   ativo: 'bg-blue-600 text-white' },
-  purple: { bg: 'bg-purple-50 hover:bg-purple-100', text: 'text-purple-700', ring: 'ring-purple-400', ativo: 'bg-purple-600 text-white' },
+  purple: { bg: 'bg-amber-50 hover:bg-amber-100', text: 'text-amber-700', ring: 'ring-amber-400', ativo: 'bg-amber-600 text-white' },
   red:    { bg: 'bg-red-50 hover:bg-red-100',     text: 'text-red-700',    ring: 'ring-red-400',    ativo: 'bg-red-600 text-white' },
   green:  { bg: 'bg-green-50 hover:bg-green-100', text: 'text-green-700',  ring: 'ring-green-400',  ativo: 'bg-green-600 text-white' },
 }
@@ -219,9 +219,9 @@ function initials(nome) {
             v-if="f.key !== 'todos'"
             class="w-1.5 h-1.5 rounded-full"
             :class="{
-              'bg-purple-500': f.key === 'pendente',
+              'bg-amber-500': f.key === 'pendente',
               'bg-red-500':    f.key === 'atraso',
-              'bg-teal-500':   f.key === 'acordo',
+              'bg-blue-500':   f.key === 'acordo',
             }"
           />
           {{ f.label }}
@@ -262,7 +262,7 @@ function initials(nome) {
         <button
           type="button"
           @click="busca = ''; filtroAtivo = 'todos'"
-          class="mt-3 text-sm text-teal-600 hover:underline"
+          class="mt-3 text-sm text-blue-600 hover:underline"
         >Limpar filtros</button>
       </div>
 
@@ -277,7 +277,7 @@ function initials(nome) {
 
           <!-- Avatar com indicador de urgência -->
           <div class="relative shrink-0">
-            <div class="w-11 h-11 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-sm">
+            <div class="w-11 h-11 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm">
               {{ initials(c.nome) }}
             </div>
             <span
@@ -314,10 +314,10 @@ function initials(nome) {
               <span v-if="c.emAtraso > 0" class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
                 {{ c.emAtraso }} em atraso
               </span>
-              <span v-if="c.pendingApproval > 0" class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+              <span v-if="c.pendingApproval > 0" class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
                 {{ c.pendingApproval }} aguard. aprovação
               </span>
-              <span v-if="c.acordoAtivo > 0" class="text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-medium">
+              <span v-if="c.acordoAtivo > 0" class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
                 {{ c.acordoAtivo }} acordo ativo
               </span>
               <span v-if="c.emAnalise > 0" class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
@@ -332,7 +332,7 @@ function initials(nome) {
             <button
               v-if="c.pendingApproval > 0"
               @click="iniciarAtendimento(c.cpf)"
-              class="text-sm py-2 px-4 whitespace-nowrap rounded-lg border-2 border-purple-400 bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium transition-colors flex items-center gap-1.5"
+              class="text-sm py-2 px-4 whitespace-nowrap rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium transition-colors flex items-center gap-1.5"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.641 0-8.573-3.007-9.964-7.178z"/>

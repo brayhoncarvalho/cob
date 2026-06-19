@@ -108,13 +108,13 @@ function goToNegociacoes() {
     <div
       v-for="p in propostasAtendente"
       :key="p.id"
-      class="mb-4 rounded-xl bg-gradient-to-r from-teal-500 to-teal-700 text-white p-4 shadow-lg flex items-center justify-between gap-4"
+      class="mb-4 rounded-xl bg-blue-600 text-white p-4 shadow-lg flex items-center justify-between gap-4"
     >
       <div class="flex items-start gap-3">
         <div class="text-2xl mt-0.5">📋</div>
         <div>
           <p class="font-bold text-sm">Oferta especial do atendente!</p>
-          <p class="text-xs text-teal-100 mt-0.5">
+          <p class="text-xs text-blue-100 mt-0.5">
             Nosso atendente preparou uma proposta de acordo para o contrato #{{ p.contratoId }}.
             Revise e decida se aceita.
           </p>
@@ -122,7 +122,7 @@ function goToNegociacoes() {
       </div>
       <RouterLink
         :to="`/proposta/aprovar/${p.id}`"
-        class="shrink-0 bg-white text-teal-700 font-bold text-sm px-4 py-2 rounded-lg hover:bg-teal-50 transition whitespace-nowrap"
+        class="shrink-0 bg-white text-blue-700 font-bold text-sm px-4 py-2 rounded-lg hover:bg-blue-50 transition whitespace-nowrap"
       >
         Ver oferta
       </RouterLink>

@@ -216,15 +216,15 @@ function simular() {
       <div class="max-w-lg mx-auto">
 
         <!-- Banner de status -->
-        <div class="rounded-2xl bg-purple-50 border border-purple-200 px-5 py-4 mb-5 flex items-start gap-3">
-          <div class="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center shrink-0 mt-0.5">
-            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <div class="rounded-2xl bg-amber-50 border border-amber-200 px-5 py-4 mb-5 flex items-start gap-3">
+          <div class="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
           </div>
           <div>
-            <p class="font-semibold text-purple-900 text-sm">Proposta aguardando aprovação do cliente</p>
-            <p class="text-xs text-purple-600 mt-0.5">
+            <p class="font-semibold text-amber-900 text-sm">Proposta aguardando aprovação do cliente</p>
+            <p class="text-xs text-amber-600 mt-0.5">
               Enviada em {{ new Date(propostaPendente.dataEnvio).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) }}
               · Protocolo <span class="font-mono font-semibold">{{ propostaPendente.id }}</span>
             </p>
@@ -241,7 +241,7 @@ function simular() {
             </div>
             <div class="bg-gray-50 rounded-xl p-3">
               <p class="text-xs text-gray-400 mb-0.5">Total do acordo</p>
-              <p class="font-semibold text-teal-700">{{ formatMoney(propostaPendente.totalAcordo) }}</p>
+              <p class="font-semibold text-blue-700">{{ formatMoney(propostaPendente.totalAcordo) }}</p>
             </div>
             <div class="bg-gray-50 rounded-xl p-3">
               <p class="text-xs text-gray-400 mb-0.5">Entrada (Pix)</p>
@@ -318,8 +318,8 @@ function simular() {
     <template v-if="submitted && !propostaPendente">
       <div class="max-w-lg mx-auto">
         <div class="card text-center py-10 mb-6">
-          <svg class="w-14 h-14 text-teal-500 mx-auto mb-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <h2 class="text-xl font-bold text-teal-700 mb-2">Proposta enviada ao cliente!</h2>
+          <svg class="w-14 h-14 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <h2 class="text-xl font-bold text-green-700 mb-2">Proposta enviada ao cliente!</h2>
           <p class="text-gray-500 text-sm">O cliente receberá uma notificação para aprovar ou rejeitar a proposta.</p>
           <p class="text-xs font-mono font-semibold text-gray-700 mt-3">Protocolo: {{ submittedId }}</p>
         </div>
@@ -336,12 +336,12 @@ function simular() {
       <div class="max-w-2xl mx-auto">
 
         <!-- Info do cliente -->
-        <div class="card mb-6 bg-teal-50 border border-teal-100">
+        <div class="card mb-6 bg-blue-50 border border-blue-100">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center text-white font-bold text-sm">JD</div>
+            <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">JD</div>
             <div>
-              <p class="font-semibold text-teal-900">João da Silva</p>
-              <p class="text-xs text-teal-600 font-mono">{{ clienteId }}</p>
+              <p class="font-semibold text-blue-900">João da Silva</p>
+              <p class="text-xs text-blue-600 font-mono">{{ clienteId }}</p>
             </div>
           </div>
         </div>
@@ -384,16 +384,16 @@ function simular() {
               @click="modoEscopo = 'total'"
               class="rounded-xl border-2 p-3 text-left transition-all"
               :class="modoEscopo === 'total'
-                ? 'border-teal-500 bg-teal-50'
+                ? 'border-blue-500 bg-blue-50'
                 : 'border-gray-200 hover:border-gray-300'"
             >
-              <p class="text-sm font-semibold" :class="modoEscopo === 'total' ? 'text-teal-800' : 'text-gray-700'">
+              <p class="text-sm font-semibold" :class="modoEscopo === 'total' ? 'text-blue-800' : 'text-gray-700'">
                 Saldo total
               </p>
-              <p class="text-xs mt-0.5" :class="modoEscopo === 'total' ? 'text-teal-600' : 'text-gray-400'">
+              <p class="text-xs mt-0.5" :class="modoEscopo === 'total' ? 'text-blue-600' : 'text-gray-400'">
                 Encerra o contrato original. Novo plano para o saldo inteiro.
               </p>
-              <p class="text-xs font-bold mt-1" :class="modoEscopo === 'total' ? 'text-teal-700' : 'text-gray-500'">
+              <p class="text-xs font-bold mt-1" :class="modoEscopo === 'total' ? 'text-blue-700' : 'text-gray-500'">
                 {{ formatMoney(contract?.saldoDevedor ?? 0) }}
               </p>
             </button>
@@ -420,7 +420,7 @@ function simular() {
 
           <!-- Info do escopo selecionado -->
           <div class="rounded-lg px-3 py-2 mb-5 text-xs flex items-center gap-2"
-            :class="modoEscopo === 'debito' ? 'bg-amber-50 text-amber-700' : 'bg-teal-50 text-teal-700'"
+            :class="modoEscopo === 'debito' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'"
           >
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>
             <span v-if="modoEscopo === 'total'">
@@ -438,12 +438,12 @@ function simular() {
           <div class="flex items-center gap-4 mb-5">
             <span class="text-xs font-medium text-gray-500 shrink-0">Montar por:</span>
             <label class="flex items-center gap-1.5 cursor-pointer select-none">
-              <input type="radio" name="modoCalculoAtt" value="entrada" :checked="modoCalculo === 'entrada'" @change="onModoCalculo('entrada')" class="accent-teal-600" />
-              <span class="text-sm" :class="modoCalculo === 'entrada' ? 'text-teal-700 font-semibold' : 'text-gray-600'">Entrada</span>
+              <input type="radio" name="modoCalculoAtt" value="entrada" :checked="modoCalculo === 'entrada'" @change="onModoCalculo('entrada')" class="accent-blue-600" />
+              <span class="text-sm" :class="modoCalculo === 'entrada' ? 'text-blue-700 font-semibold' : 'text-gray-600'">Entrada</span>
             </label>
             <label class="flex items-center gap-1.5 cursor-pointer select-none">
-              <input type="radio" name="modoCalculoAtt" value="parcela" :checked="modoCalculo === 'parcela'" @change="onModoCalculo('parcela')" class="accent-teal-600" />
-              <span class="text-sm" :class="modoCalculo === 'parcela' ? 'text-teal-700 font-semibold' : 'text-gray-600'">Parcela mensal</span>
+              <input type="radio" name="modoCalculoAtt" value="parcela" :checked="modoCalculo === 'parcela'" @change="onModoCalculo('parcela')" class="accent-blue-600" />
+              <span class="text-sm" :class="modoCalculo === 'parcela' ? 'text-blue-700 font-semibold' : 'text-gray-600'">Parcela mensal</span>
             </label>
           </div>
 
@@ -502,14 +502,14 @@ function simular() {
           <div class="mb-5">
             <div class="flex items-center justify-between mb-1.5">
               <label class="text-sm font-medium text-gray-700">Número de parcelas</label>
-              <span class="font-bold text-teal-700">{{ numParcelas }}x</span>
+              <span class="font-bold text-blue-700">{{ numParcelas }}x</span>
             </div>
             <input
               v-model.number="numParcelas"
               type="range"
               min="1"
               max="24"
-              class="w-full accent-teal-600"
+              class="w-full accent-blue-600"
             />
             <div class="flex justify-between text-xs text-gray-400 mt-0.5">
               <span>1x</span>
@@ -526,24 +526,24 @@ function simular() {
           </div>
 
           <!-- Preview -->
-          <div class="rounded-xl bg-teal-50 border border-teal-100 p-4 mb-5">
-            <h4 class="text-sm font-semibold text-teal-800 mb-3">Resumo da proposta</h4>
+          <div class="rounded-xl bg-blue-50 border border-blue-100 p-4 mb-5">
+            <h4 class="text-sm font-semibold text-blue-800 mb-3">Resumo da proposta</h4>
             <div class="space-y-1.5 text-sm">
               <div class="flex justify-between">
-                <span class="text-teal-700">Entrada (Pix)</span>
-                <span class="font-bold text-teal-900">{{ formatMoney(entradaEfetiva) }}</span>
+                <span class="text-blue-700">Entrada (Pix)</span>
+                <span class="font-bold text-blue-900">{{ formatMoney(entradaEfetiva) }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-teal-700">{{ numParcelas }}x de</span>
-                <span class="font-bold text-teal-900">{{ formatMoney(valorParcela) }}</span>
+                <span class="text-blue-700">{{ numParcelas }}x de</span>
+                <span class="font-bold text-blue-900">{{ formatMoney(valorParcela) }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-teal-700">Desconto aplicado</span>
+                <span class="text-blue-700">Desconto aplicado</span>
                 <span class="font-semibold text-green-700">{{ formatMoney(descontoReais) }}</span>
               </div>
-              <div class="border-t border-teal-200 pt-2 flex justify-between">
-                <span class="font-bold text-teal-900">Total do acordo</span>
-                <span class="font-bold text-teal-900">{{ formatMoney(totalAcordo) }}</span>
+              <div class="border-t border-blue-200 pt-2 flex justify-between">
+                <span class="font-bold text-blue-900">Total do acordo</span>
+                <span class="font-bold text-blue-900">{{ formatMoney(totalAcordo) }}</span>
               </div>
             </div>
           </div>

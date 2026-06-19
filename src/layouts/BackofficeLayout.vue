@@ -101,7 +101,7 @@ defineProps({
               class="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-gray-700/80 transition-colors"
             >
               <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                <span class="text-xs font-bold text-[#2563eb] leading-none">{{ userInitials }}</span>
+                <span class="text-xs font-bold text-blue-600 leading-none">{{ userInitials }}</span>
               </div>
               <div class="hidden sm:block text-left">
                 <p class="text-sm font-medium text-white leading-none">{{ state.user?.nome?.split(' ')[0] }}</p>
@@ -146,7 +146,7 @@ defineProps({
         <RouterLink
           v-if="backTo"
           :to="backTo"
-          class="flex items-center gap-1 text-sm text-gray-500 hover:text-[#2563eb] transition-colors"
+          class="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600 transition-colors"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
