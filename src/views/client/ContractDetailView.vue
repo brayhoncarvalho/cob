@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
@@ -51,6 +51,48 @@ function parcela_action(p) {
   if (p.status === 'futura') return 'antecipar'
   return null
 }
+
+// ── Seleção de parcelas para pagamento ──────────────────────────────────────
+const hoje = new Date()
+
+function noMesVigente(p) {
+  const v = new Date(p.vencimento + 'T00:00:00')
+  return v.getFullYear() === hoje.getFullYear() && v.getMonth() === hoje.getMonth()
+}
+
+const selecionadas = ref(new Set())
+
+watch(contract, c => {
+  if (!c) return
+  selecionadas.value = new Set(
+    c.parcelas
+      .filter(p => p.status === 'vencida' || (p.status === 'proxima' && noMesVigente(p)))
+      .map(p => p.numero)
+  )
+}, { immediate: true })
+
+function toggleParcela(numero) {
+  const s = new Set(selecionadas.value)
+  if (s.has(numero)) s.delete(numero)
+  else s.add(numero)
+  selecionadas.value = s
+}
+
+const parcelasSelecionadasObj = computed(() =>
+  contract.value?.parcelas.filter(p => selecionadas.value.has(p.numero)) ?? []
+)
+
+const totalSelecionado = computed(() =>
+  parcelasSelecionadasObj.value.reduce((s, p) => s + p.valorAtualizado, 0)
+)
+
+const jurosSelecionados = computed(() =>
+  parcelasSelecionadasObj.value.reduce((s, p) => s + (p.juros ?? 0) + (p.multa ?? 0), 0)
+)
+
+const querySelecionadas = computed(() =>
+  [...selecionadas.value].sort((a, b) => a - b).join(',')
+)
 </script>
 
 <template>
@@ -105,7 +147,7 @@ function parcela_action(p) {
         <div v-if="contract.parcelasVencidas > 0" class="mt-4 border border-red-100 rounded-lg overflow-hidden">
           <div class="bg-red-50 px-4 py-2 flex items-center justify-between">
             <span class="text-xs font-semibold text-red-700">Detalhamento de encargos</span>
-            <span class="text-xs text-red-600">Parcelas #{{ contract.parcelas.filter(p=>p.status==='vencida').map(p=>p.numero).join(', #') }}</span>
+            <span class="text-xs text-red-600">Parcelas {{ contract.parcelas.filter(p=>p.status==='vencida').map(p=>p.numero).join(', ') }}</span>
           </div>
           <div class="divide-y divide-red-50">
             <div class="px-4 py-2.5 flex justify-between text-sm">
@@ -166,13 +208,29 @@ function parcela_action(p) {
 
       <!-- Parcelas -->
       <div class="card mb-6">
-        <h3 class="font-semibold text-gray-900 mb-4">Parcelas</h3>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold text-gray-900">Parcelas</h3>
+          <div class="flex gap-2 text-xs">
+            <button
+              v-if="contract.parcelas.some(p => p.status === 'vencida' || p.status === 'proxima')"
+              @click="selecionadas = new Set(contract.parcelas.filter(p => p.status === 'vencida' || p.status === 'proxima').map(p => p.numero))"
+              class="text-blue-600 hover:underline font-medium"
+            >Selecionar todas em aberto</button>
+            <span v-if="selecionadas.size > 0" class="text-gray-300">·</span>
+            <button
+              v-if="selecionadas.size > 0"
+              @click="selecionadas = new Set()"
+              class="text-gray-500 hover:underline"
+            >Limpar</button>
+          </div>
+        </div>
 
         <div class="overflow-x-auto -mx-6 px-6">
-          <table class="w-full text-sm min-w-[480px]">
+          <table class="w-full text-sm min-w-[520px]">
             <thead>
               <tr class="text-xs text-gray-500 border-b border-gray-100">
-                <th class="text-left py-2 font-medium">#</th>
+                <th class="text-left py-2 font-medium w-8"></th>
+                <th class="text-left py-2 font-medium">Parcela</th>
                 <th class="text-left py-2 font-medium">Vencimento</th>
                 <th class="text-left py-2 font-medium">Dt. Pagamento</th>
                 <th class="text-right py-2 font-medium">Valor</th>
@@ -188,9 +246,24 @@ function parcela_action(p) {
                   'transition-colors',
                   p.status === 'vencida' ? 'bg-red-50' : '',
                   p.status === 'proxima' ? 'bg-amber-50' : '',
+                  selecionadas.has(p.numero) && p.status !== 'paga' ? 'outline outline-2 outline-blue-400/30' : '',
                 ]"
               >
+                <!-- Checkbox -->
+                <td class="py-2.5 pr-2">
+                  <input
+                    v-if="p.status === 'vencida' || p.status === 'proxima'"
+                    type="checkbox"
+                    :checked="selecionadas.has(p.numero)"
+                    @change="toggleParcela(p.numero)"
+                    class="w-4 h-4 accent-blue-600 cursor-pointer"
+                    :aria-label="`Selecionar parcela ${p.numero}`"
+                  />
+                  <span v-else class="block w-4" />
+                </td>
+                <!-- Número -->
                 <td class="py-2.5 text-gray-500 font-mono text-xs pr-2">{{ p.numero }}</td>
+                <!-- Vencimento -->
                 <td class="py-2.5">
                   <span :class="p.status === 'vencida' ? 'text-red-700 font-medium' : ''">
                     {{ formatDate(p.vencimento) }}
@@ -198,11 +271,14 @@ function parcela_action(p) {
                   <span v-if="p.status === 'vencida'" class="inline-flex items-center ml-1 text-xs text-red-500">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
                   </span>
+                  <span v-if="p.status === 'proxima' && !noMesVigente(p)" class="ml-1 text-[10px] text-amber-600 font-medium">(próx. mês)</span>
                 </td>
+                <!-- Dt. Pagamento -->
                 <td class="py-2.5 text-sm">
                   <span v-if="p.dataPagamento" class="text-green-700 font-medium">{{ formatDate(p.dataPagamento) }}</span>
                   <span v-else class="text-gray-300">—</span>
                 </td>
+                <!-- Valor -->
                 <td class="py-2.5 text-right font-semibold">
                   <span :class="p.status === 'vencida' ? 'text-red-700' : 'text-gray-900'">
                     {{ formatMoney(p.valorAtualizado) }}
@@ -211,19 +287,14 @@ function parcela_action(p) {
                     {{ formatMoney(p.valor) }}
                   </span>
                 </td>
+                <!-- Status -->
                 <td class="py-2.5 text-center">
                   <StatusBadge :status="p.status" small />
                 </td>
+                <!-- Ação -->
                 <td class="py-2.5 text-right">
                   <RouterLink
-                    v-if="parcela_action(p) === 'pagar'"
-                    :to="`/contratos/${contract.id}/pagar?parcelas=${p.numero}`"
-                    class="text-xs font-semibold text-blue-600 hover:underline"
-                  >
-                    Pagar
-                  </RouterLink>
-                  <RouterLink
-                    v-else-if="parcela_action(p) === 'antecipar'"
+                    v-if="parcela_action(p) === 'antecipar'"
                     :to="`/contratos/${contract.id}/antecipar?parcelas=${p.numero}`"
                     class="text-xs font-medium text-gray-500 hover:underline"
                   >
@@ -243,17 +314,44 @@ function parcela_action(p) {
         >
           {{ showAll ? 'Ver menos' : `Ver todas as ${contract.parcelas.length} parcelas` }}
         </button>
+
+        <!-- Barra de pagamento -->
+        <div
+          v-if="selecionadas.size > 0"
+          class="mt-4 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3"
+        >
+          <div class="text-sm">
+            <span class="text-blue-700 font-medium">
+              {{ selecionadas.size }} parcela{{ selecionadas.size > 1 ? 's' : '' }} selecionada{{ selecionadas.size > 1 ? 's' : '' }}:
+            </span>
+            <span class="text-xs text-blue-500 ml-1">
+              {{ [...selecionadas].sort((a,b)=>a-b).join(', ') }}
+            </span>
+            <span v-if="jurosSelecionados > 0" class="block text-xs text-red-500 mt-0.5">
+              Incl. {{ formatMoney(jurosSelecionados) }} em juros e multa
+            </span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-lg font-bold text-blue-900">{{ formatMoney(totalSelecionado) }}</span>
+            <RouterLink
+              :to="`/contratos/${contract.id}/pagar?parcelas=${querySelecionadas}`"
+              class="btn-primary text-sm py-2 px-4 whitespace-nowrap"
+            >
+              Pagar com Pix
+            </RouterLink>
+          </div>
+        </div>
+
+        <div
+          v-else-if="contract.parcelas.some(p => p.status === 'vencida' || p.status === 'proxima')"
+          class="mt-4 text-sm text-gray-400 text-center py-2"
+        >
+          Selecione as parcelas que deseja pagar.
+        </div>
       </div>
 
       <!-- Botões de ação -->
       <div class="flex flex-wrap gap-3">
-        <RouterLink
-          v-if="contract.parcelasVencidas > 0"
-          :to="`/contratos/${contract.id}/pagar`"
-          class="btn-danger"
-        >
-          Pagar Vencidas
-        </RouterLink>
         <RouterLink
           :to="`/contratos/${contract.id}/antecipar`"
           class="btn-secondary"

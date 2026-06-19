@@ -122,7 +122,7 @@ function generateNew() {
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-500">Parcela(s)</span>
-                <span class="font-medium">{{ parcelasSelecionadas.map(p => '#' + p.numero).join(', ') }}</span>
+                <span class="font-medium">{{ parcelasSelecionadas.map(p => p.numero).join(', ') }}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-500">Valor original</span>
