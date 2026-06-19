@@ -78,6 +78,9 @@ function renderPreview(texto) {
 
 const previewAssunto = computed(() => renderPreview(draftAssunto.value))
 const previewCorpo   = computed(() => renderPreview(draftCorpo.value))
+const previewCorpoSms = computed(() =>
+  previewCorpo.value.replace(/<strong class="text-blue-700">/g, '<strong class="text-blue-100">')
+)
 
 const CANAIS = [
   { id: 'email',    label: 'E-mail',    icon: '✉️' },
@@ -259,7 +262,7 @@ function inserirVariavel(v) {
               <!-- Preview SMS -->
               <div v-else-if="canalAtivo === 'sms'" class="p-4 flex-1">
                 <div class="max-w-xs">
-                  <div class="bg-blue-500 rounded-2xl rounded-tl-none px-4 py-3 text-sm text-white leading-relaxed" v-html="previewCorpo.replace(/<strong class=\"text-blue-700\">/g, '<strong class=\"text-blue-100\">')" />
+                  <div class="bg-blue-500 rounded-2xl rounded-tl-none px-4 py-3 text-sm text-white leading-relaxed" v-html="previewCorpoSms" />
                   <p class="text-xs text-gray-400 mt-1">Mensagem de texto</p>
                   <p
                     :class="draftCorpo.length > 160 ? 'text-red-500' : 'text-gray-400'"
