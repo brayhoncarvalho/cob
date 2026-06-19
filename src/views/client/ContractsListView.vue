@@ -10,11 +10,11 @@ const router = useRouter()
 const { formatMoney } = useFormatters()
 const { state: flowState } = useFlow()
 
-// Contratos em atraso primeiro
+// Contratos ativos primeiro, encerrados por último
 const contracts = computed(() =>
   [...flowState.contracts].sort((a, b) => {
-    const order = { em_atraso: 0, renegociado: 1, em_dia: 2 }
-    return (order[a.status] ?? 3) - (order[b.status] ?? 3)
+    const order = { em_atraso: 0, em_dia: 1, renegociado: 2, quitado: 3 }
+    return (order[a.status] ?? 2) - (order[b.status] ?? 2)
   })
 )
 
@@ -74,7 +74,8 @@ function totalVencidoContrato(c) {
               </div>
               <div class="w-full bg-gray-100 rounded-full h-1.5">
                 <div
-                  class="bg-blue-500 h-1.5 rounded-full transition-all"
+                  class="h-1.5 rounded-full transition-all"
+                  :class="c.status === 'quitado' ? 'bg-emerald-500' : c.status === 'em_atraso' ? 'bg-red-400' : 'bg-blue-500'"
                   :style="{ width: `${(c.parcelasPagas / c.totalParcelas) * 100}%` }"
                 />
               </div>
@@ -101,6 +102,13 @@ function totalVencidoContrato(c) {
             class="btn-secondary text-sm py-2 px-4"
           >
             Negociar
+          </RouterLink>
+          <RouterLink
+            v-if="c.acordoAtivo && c.status !== 'quitado'"
+            :to="`/negociacoes/${c.acordoAtivo}`"
+            class="btn-secondary text-sm py-2 px-4"
+          >
+            Ver Acordo
           </RouterLink>
           <RouterLink
             :to="`/contratos/${c.id}`"
