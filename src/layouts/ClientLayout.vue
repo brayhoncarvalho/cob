@@ -87,6 +87,17 @@ defineProps({
               </svg>
               Negociações
             </RouterLink>
+            <!-- Pagamentos -->
+            <RouterLink
+              to="/pagamentos"
+              class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-blue-100 hover:text-white hover:bg-blue-700/60 transition-colors"
+              active-class="!text-white bg-blue-700/60"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
+              </svg>
+              Pagamentos
+            </RouterLink>
           </nav>
         </div>
 
@@ -194,6 +205,16 @@ defineProps({
             <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
           </svg>
           <span class="text-xs mt-0.5 font-medium">Negociações</span>
+        </RouterLink>
+        <RouterLink
+          to="/pagamentos"
+          class="flex-1 flex flex-col items-center py-2.5 text-gray-400 transition-colors"
+          active-class="text-blue-600"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
+          </svg>
+          <span class="text-xs mt-0.5 font-medium">Pagamentos</span>
         </RouterLink>
       </div>
     </nav>

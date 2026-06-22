@@ -12,6 +12,7 @@ const NegotiationView      = () => import('@/views/client/NegotiationView.vue')
 const ProposalResultView   = () => import('@/views/client/ProposalResultView.vue')
 const MyNegotiationsView   = () => import('@/views/client/MyNegotiationsView.vue')
 const AgreementDetailView  = () => import('@/views/client/AgreementDetailView.vue')
+const PaymentsView         = () => import('@/views/client/PaymentsView.vue')
 
 const ApprovalQueueView    = () => import('@/views/backoffice/ApprovalQueueView.vue')
 const ProposalAnalysisView = () => import('@/views/backoffice/ProposalAnalysisView.vue')
@@ -41,6 +42,7 @@ const routes = [
   { path: '/proposta/aprovar/:id',           component: ProposalApprovalView, meta: { requiresAuth: true, role: 'client' } },
   { path: '/negociacoes',                    component: MyNegotiationsView,  meta: { requiresAuth: true, role: 'client' } },
   { path: '/negociacoes/:id',                component: AgreementDetailView, meta: { requiresAuth: true, role: 'client' } },
+  { path: '/pagamentos',                     component: PaymentsView,        meta: { requiresAuth: true, role: 'client' } },
 
   // Back-office — Analista (1º Nível)
   { path: '/backoffice/fila',                component: ApprovalQueueView,    meta: { requiresAuth: true, role: 'analyst' } },
