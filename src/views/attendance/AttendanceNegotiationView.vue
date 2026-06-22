@@ -167,6 +167,13 @@ const proposalStatusAtt = computed(() => {
 })
 
 // Feedback de bloqueio
+// Acordo realmente ativo: ignora acordoAtivo que aponta para negociação inativa
+const acordoVivo = computed(() => {
+  if (!contract.value?.acordoAtivo) return null
+  const neg = flowState.negotiations.find(n => n.id === contract.value.acordoAtivo)
+  return neg && ['em_pagamento', 'em_analise'].includes(neg.status) ? neg : null
+})
+
 const bloqueio = computed(() => {
   if (bloqueioNegocio.value?.tipo === 'tentativas')
     return `Limite de ${bloqueioNegocio.value.max} tentativa(s) de negociação atingido para este contrato.`
@@ -178,7 +185,7 @@ const bloqueio = computed(() => {
       : 'Informe o valor da entrada.'
   if (valorParcela.value < rules.parcelaMinimaValor)
     return `Parcela de ${formatMoney(valorParcela.value)} abaixo do mínimo de ${formatMoney(rules.parcelaMinimaValor)}.`
-  if (contract.value?.acordoAtivo)
+  if (acordoVivo.value)
     return 'Cliente já possui acordo ativo neste contrato.'
   return null
 })

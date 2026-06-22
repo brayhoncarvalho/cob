@@ -56,11 +56,17 @@ const state = reactive(loadState() ?? freshState())
 // Sanitização de boot: garantir que contratos com acordoAtivo
 // apontando para negociação cancelada/inexistente fiquem limpos
 ;(function _sanitize() {
-  const cancelledIds = new Set(
-    state.negotiations.filter(n => n.status === 'cancelada').map(n => n.id)
+  // Considera inativas: cancelada, quitado, reprovada
+  const inactiveIds = new Set(
+    state.negotiations
+      .filter(n => ['cancelada', 'quitado', 'reprovada'].includes(n.status))
+      .map(n => n.id)
   )
+  // Também limpa acordoAtivo se o ID não existe mais nas negociações
+  const allNegIds = new Set(state.negotiations.map(n => n.id))
   state.contracts.forEach(c => {
-    if (c.acordoAtivo && cancelledIds.has(c.acordoAtivo)) {
+    const isStale = c.acordoAtivo && (inactiveIds.has(c.acordoAtivo) || !allNegIds.has(c.acordoAtivo))
+    if (isStale) {
       c.acordoAtivo = null
       const vencidas = (c.parcelas ?? []).filter(p => p.status === 'vencida')
       c.parcelasVencidas = vencidas.length
@@ -205,11 +211,12 @@ function markParcelaPaid(negId, parcelaIdx) {
   if (todasPagas) {
     neg.status       = 'quitado'
     neg.dataQuitacao = new Date().toISOString()
-    // Atualiza o contrato vinculado como quitado
+    // Atualiza o contrato vinculado como quitado e limpa acordoAtivo
     const contrato = state.contracts.find(c => c.id === neg.contratoId)
     if (contrato) {
       contrato.status       = 'quitado'
       contrato.dataQuitacao = new Date().toISOString()
+      contrato.acordoAtivo  = null
     }
   }
 

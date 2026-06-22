@@ -144,6 +144,13 @@ const bloqueioNegocio = computed(() => {
   return null
 })
 
+// Acordo realmente ativo: ignora acordoAtivo que aponta para negociação inativa
+const acordoVivo = computed(() => {
+  if (!contract.value?.acordoAtivo) return null
+  const neg = flowState.negotiations.find(n => n.id === contract.value.acordoAtivo)
+  return neg && ['em_pagamento', 'em_analise'].includes(neg.status) ? neg : null
+})
+
 // Status da proposta
 const proposalStatus = computed(() => {
   if (modoCalculo.value === 'parcela' && valorParcelaInput.value > maxParcelaInput.value)
@@ -151,7 +158,7 @@ const proposalStatus = computed(() => {
   if (entradaEfetiva.value <= 0)                       return 'blocked_zero'
   if (valorParcela.value < rules.parcelaMinimaValor)    return 'blocked_parcela'
   if (descontoReais.value > totalDue.value * 0.30)      return 'blocked_desconto'
-  if (contract.value?.acordoAtivo)                      return 'blocked_acordo'
+  if (acordoVivo.value)                                 return 'blocked_acordo'
   if (bloqueioNegocio.value?.tipo === 'tentativas')     return 'blocked_tentativas'
 
   const autoOk =
