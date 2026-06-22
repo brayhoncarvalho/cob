@@ -53,6 +53,25 @@ function _buildParcelas({ entrada, numParcelas, valorParcela }) {
 
 const state = reactive(loadState() ?? freshState())
 
+// Sanitização de boot: garantir que contratos com acordoAtivo
+// apontando para negociação cancelada/inexistente fiquem limpos
+;(function _sanitize() {
+  const cancelledIds = new Set(
+    state.negotiations.filter(n => n.status === 'cancelada').map(n => n.id)
+  )
+  state.contracts.forEach(c => {
+    if (c.acordoAtivo && cancelledIds.has(c.acordoAtivo)) {
+      c.acordoAtivo = null
+      const vencidas = (c.parcelas ?? []).filter(p => p.status === 'vencida')
+      c.parcelasVencidas = vencidas.length
+      if (vencidas.length > 0)              c.status = 'em_atraso'
+      else if ((c.parcelas ?? []).every(p => p.status === 'paga')) c.status = 'quitado'
+      else                                   c.status = 'em_dia'
+    }
+  })
+  persist()
+})()
+
 // ── actions ──────────────────────────────────────────────────────────────────
 
 /**
@@ -298,9 +317,10 @@ function clientRejectProposal(id) {
 /** Cliente cancela proposta que ainda está em análise */
 function clientCancelNegotiation(id) {
   const neg = state.negotiations.find(n => n.id === id)
-  if (!neg || !['em_analise', 'contraproposta'].includes(neg.status)) return
+  if (!neg || !['em_analise', 'contraproposta', 'em_pagamento'].includes(neg.status)) return
   neg.status = 'cancelada'
   neg.dataCancelamento = new Date().toISOString()
+  _deactivateContract(neg.contratoId)
   persist()
 }
 
@@ -310,6 +330,7 @@ function cancelAttendantProposal(id) {
   if (!neg) return
   neg.status = 'cancelada'
   neg.dataCancelamento = new Date().toISOString()
+  _deactivateContract(neg.contratoId)
   persist()
 }
 
@@ -322,6 +343,22 @@ function _activateContract(contratoId, negId) {
   c.acordoAtivo = negId
   // Zera parcelas vencidas (acordo congela o débito)
   c.parcelasVencidas = 0
+}
+
+function _deactivateContract(contratoId) {
+  const c = state.contracts.find(c => c.id === contratoId)
+  if (!c) return
+  c.acordoAtivo = null
+  // Recalcular parcelas vencidas reais
+  const vencidas = c.parcelas.filter(p => p.status === 'vencida')
+  c.parcelasVencidas = vencidas.length
+  if (vencidas.length > 0) {
+    c.status = 'em_atraso'
+  } else if (c.parcelas.every(p => p.status === 'paga')) {
+    c.status = 'quitado'
+  } else {
+    c.status = 'em_dia'
+  }
 }
 
 // ── export ────────────────────────────────────────────────────────────────────
