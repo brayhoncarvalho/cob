@@ -144,16 +144,6 @@ const bloqueioNegocio = computed(() => {
   if (!cid) return null
   const negs = flowState.negotiations.filter(n => n.contratoId === cid)
 
-  // cooldown
-  const cancelada = negs
-    .filter(n => n.status === 'cancelada' && n.dataCancelamento)
-    .sort((a, b) => b.dataCancelamento.localeCompare(a.dataCancelamento))[0]
-  if (cancelada) {
-    const diasDesde = (Date.now() - new Date(cancelada.dataCancelamento)) / 86400000
-    const cooldown  = rules.cooldownCancelamentoDias ?? 30
-    if (diasDesde < cooldown) return { tipo: 'cooldown', diasRestantes: Math.ceil(cooldown - diasDesde) }
-  }
-
   // limite de tentativas
   const tentativas = negs.filter(n =>
     ['em_analise','contraproposta','em_pagamento','aprovada','reprovada','cancelada','quitado'].includes(n.status)
@@ -166,8 +156,6 @@ const bloqueioNegocio = computed(() => {
 
 // Feedback de bloqueio
 const bloqueio = computed(() => {
-  if (bloqueioNegocio.value?.tipo === 'cooldown')
-    return `Negociação bloqueada — aguardar ${bloqueioNegocio.value.diasRestantes} dia(s) após o cancelamento do acordo anterior.`
   if (bloqueioNegocio.value?.tipo === 'tentativas')
     return `Limite de ${bloqueioNegocio.value.max} tentativa(s) de negociação atingido para este contrato.`
   if (modoCalculo.value === 'parcela' && valorParcelaInput.value > maxParcelaInput.value)
@@ -175,7 +163,7 @@ const bloqueio = computed(() => {
   if (entradaEfetiva.value <= 0)
     return modoCalculo.value === 'parcela'
       ? `Parcela muito alta — com esse valor as parcelas sozinhas ultrapassam o total do acordo (${formatMoney(totalAcordo.value)}).`
-      : 'Informe o valor de entrada.'
+      : 'Informe o valor da entrada.'
   if (valorParcela.value < rules.parcelaMinimaValor)
     return `Parcela de ${formatMoney(valorParcela.value)} abaixo do mínimo de ${formatMoney(rules.parcelaMinimaValor)}.`
   if (contract.value?.acordoAtivo)
@@ -216,14 +204,14 @@ function simular() {
       <div class="max-w-lg mx-auto">
 
         <!-- Banner de status -->
-        <div class="rounded-2xl bg-amber-50 border border-amber-200 px-5 py-4 mb-5 flex items-start gap-3">
+        <div class="rounded-2xl bg-amber-50 border border-amber-500/25 px-5 py-4 mb-5 flex items-start gap-3">
           <div class="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
             <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
           </div>
           <div>
-            <p class="font-semibold text-amber-900 text-sm">Proposta aguardando aprovação do cliente</p>
+            <p class="font-semibold text-amber-900 text-sm">Proposta aguardando pagamento do cliente.</p>
             <p class="text-xs text-amber-600 mt-0.5">
               Enviada em {{ new Date(propostaPendente.dataEnvio).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) }}
               · Protocolo <span class="font-mono font-semibold">{{ propostaPendente.id }}</span>
@@ -348,7 +336,7 @@ function simular() {
 
         <!-- Seleção de contrato -->
         <div class="card mb-6">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Contrato a negociar</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Escolha um contrato</label>
           <select v-model="contratoSelecionado" class="input-field">
             <option v-for="c in contratos" :key="c.id" :value="c.id">
               #{{ c.id }} — {{ c.status === 'em_atraso' ? '⚠ Em atraso' : c.status }} — {{ formatMoney(c.saldoDevedor) }}
@@ -388,7 +376,7 @@ function simular() {
                 : 'border-gray-200 hover:border-gray-300'"
             >
               <p class="text-sm font-semibold" :class="modoEscopo === 'total' ? 'text-blue-800' : 'text-gray-700'">
-                Saldo total
+                Negociar saldo total
               </p>
               <p class="text-xs mt-0.5" :class="modoEscopo === 'total' ? 'text-blue-600' : 'text-gray-400'">
                 Encerra o contrato original. Novo plano para o saldo inteiro.
@@ -407,7 +395,7 @@ function simular() {
                 : 'border-gray-200 hover:border-gray-300'"
             >
               <p class="text-sm font-semibold" :class="modoEscopo === 'debito' ? 'text-amber-800' : 'text-gray-700'">
-                Apenas vencidas
+                Negociar parcelas vencidas
               </p>
               <p class="text-xs mt-0.5" :class="modoEscopo === 'debito' ? 'text-amber-600' : 'text-gray-400'">
                 Regulariza só o débito em atraso. Parcelas futuras continuam normalmente.
@@ -418,7 +406,7 @@ function simular() {
             </button>
           </div>
 
-          <!-- Info do escopo selecionado -->
+          <!-- Info do escopo selecionado 
           <div class="rounded-lg px-3 py-2 mb-5 text-xs flex items-center gap-2"
             :class="modoEscopo === 'debito' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'"
           >
@@ -432,26 +420,25 @@ function simular() {
               Desconto de <strong>{{ (descontoPct * 100).toFixed(0) }}%</strong> sobre os encargos.
               Total: <strong>{{ formatMoney(totalAcordo) }}</strong>.
             </span>
-          </div>
+          </div>-->
 
           <!-- Toggle 2: modo de cálculo -->
           <div class="flex items-center gap-4 mb-5">
             <span class="text-xs font-medium text-gray-500 shrink-0">Montar por:</span>
             <label class="flex items-center gap-1.5 cursor-pointer select-none">
               <input type="radio" name="modoCalculoAtt" value="entrada" :checked="modoCalculo === 'entrada'" @change="onModoCalculo('entrada')" class="accent-blue-600" />
-              <span class="text-sm" :class="modoCalculo === 'entrada' ? 'text-blue-700 font-semibold' : 'text-gray-600'">Entrada</span>
+              <span class="text-sm" :class="modoCalculo === 'entrada' ? 'text-blue-700 font-semibold' : 'text-gray-600'">Escolher o valor da entrada</span>
             </label>
             <label class="flex items-center gap-1.5 cursor-pointer select-none">
               <input type="radio" name="modoCalculoAtt" value="parcela" :checked="modoCalculo === 'parcela'" @change="onModoCalculo('parcela')" class="accent-blue-600" />
-              <span class="text-sm" :class="modoCalculo === 'parcela' ? 'text-blue-700 font-semibold' : 'text-gray-600'">Parcela mensal</span>
+              <span class="text-sm" :class="modoCalculo === 'parcela' ? 'text-blue-700 font-semibold' : 'text-gray-600'">Escolher o valor da parcela</span>
             </label>
           </div>
 
           <!-- Modo: Definir entrada -->
           <div v-if="modoCalculo === 'entrada'" class="mb-5">
             <label class="block text-sm font-medium text-gray-700 mb-1.5">
-              Valor de entrada <span class="text-red-500">*</span>
-              <span class="font-normal text-gray-400 ml-1">(via Pix)</span>
+              Informe o valor da entrada <span class="text-red-500">*</span>
             </label>
             <div class="relative">
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-sm">R$</span>
@@ -474,7 +461,7 @@ function simular() {
           <!-- Modo: Definir parcela -->
           <div v-if="modoCalculo === 'parcela'" class="mb-5">
             <label class="block text-sm font-medium text-gray-700 mb-1.5">
-              Valor da parcela desejada <span class="text-red-500">*</span>
+              Informe o valor da parcela desejada <span class="text-red-500">*</span>
             </label>
             <div class="relative">
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-sm">R$</span>

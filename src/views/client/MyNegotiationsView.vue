@@ -52,7 +52,7 @@ function goAction(n) {
         :key="n.id"
         class="card hover:shadow-md transition-shadow cursor-pointer"
         :class="[
-          n.status === 'contraproposta' ? 'border-2 border-amber-300 bg-amber-50' : '',
+            n.status === 'contraproposta' ? 'border-2 border-amber-500 bg-amber-50' : '',
           ['quitado', 'cancelada'].includes(n.status) ? 'opacity-60' : '',
         ]"
         @click="goAction(n)"
@@ -101,7 +101,7 @@ function goAction(n) {
               {{ n.motivo }}
             </div>
             <!-- Detalhes da contraproposta -->
-            <div v-if="n.status === 'contraproposta' && n.contraproposta" class="mt-2 bg-white rounded-lg p-2.5 border border-amber-200 text-xs text-amber-900 grid grid-cols-3 gap-2">
+            <div v-if="n.status === 'contraproposta' && n.contraproposta" class="mt-2 bg-white rounded-lg p-2.5 border border-amber-500/25 text-xs text-amber-900 grid grid-cols-3 gap-2">
               <div><span class="text-amber-500">Entrada</span><br><span class="font-bold">{{ formatMoney(n.contraproposta.entrada) }}</span></div>
               <div><span class="text-amber-500">Parcelas</span><br><span class="font-bold">{{ n.contraproposta.numParcelas }}x {{ formatMoney(n.contraproposta.valorParcela) }}</span></div>
               <div><span class="text-amber-500">Total</span><br><span class="font-bold">{{ formatMoney(n.contraproposta.total) }}</span></div>

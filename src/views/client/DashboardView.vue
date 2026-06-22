@@ -55,7 +55,7 @@ const notificacoes = computed(() => {
   negotiations.filter(n => n.status === 'em_pagamento' && !n.entradaPaga).forEach(n =>
     items.push({ type: 'success', text: `Acordo ${n.id} aprovado! Pague a entrada para ativar.`, action: `/negociacoes/${n.id}` })
   )
-  return items.slice(0, 5)
+  return items.slice(0, 3)
 })
 
 // Propostas do atendente aguardando aprovação do cliente
@@ -90,20 +90,6 @@ function goToNegociacoes() {
 
 <template>
   <ClientLayout title="">
-    <!-- Banner de atraso -->
-    <div v-if="totalVencidas > 0" class="alert-danger mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-      <div>
-        <p class="font-semibold flex items-center gap-1.5">
-          <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
-          Atenção: você tem {{ totalVencidas }} parcela(s) vencida(s)
-        </p>
-        <p class="text-sm mt-0.5">Total em atraso: <strong>{{ formatMoney(totalEmAberto) }}</strong> — juros continuam acumulando.</p>
-      </div>
-      <div class="flex gap-2 shrink-0">
-        <RouterLink to="/contratos" class="btn-danger text-sm py-2 px-4">Pagar Agora</RouterLink>
-      </div>
-    </div>
-
     <!-- Banner: proposta do atendente aguardando aprovação -->
     <div
       v-for="p in propostasAtendente"
@@ -111,7 +97,9 @@ function goToNegociacoes() {
       class="mb-4 rounded-xl bg-blue-600 text-white p-4 shadow-lg flex items-center justify-between gap-4"
     >
       <div class="flex items-start gap-3">
-        <div class="text-2xl mt-0.5">📋</div>
+        <div class="shrink-0 mt-0.5">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+        </div>
         <div>
           <p class="font-bold text-sm">Oferta especial do atendente!</p>
           <p class="text-xs text-blue-100 mt-0.5">
@@ -128,10 +116,23 @@ function goToNegociacoes() {
       </RouterLink>
     </div>
 
+    <!-- Banner de atraso -->
+    <div v-if="totalVencidas > 0" class="alert-danger mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <p class="font-semibold flex items-center gap-1.5">
+          <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+          Atenção: você tem {{ totalVencidas }} parcela(s) vencida(s)
+        </p>
+        <p class="text-sm mt-0.5">Total em atraso: <strong>{{ formatMoney(totalEmAberto) }}</strong> — juros continuam acumulando.</p>
+      </div>
+      <div class="flex gap-2 shrink-0">
+        <RouterLink to="/contratos" class="btn-danger text-sm py-2 px-4">Pagar Agora</RouterLink>
+      </div>
+    </div>
+
     <!-- Saudação -->
     <div class="mb-6">
       <h1 class="text-2xl font-bold text-gray-900">Olá, {{ state.user?.nome?.split(' ')[0] }}</h1>
-      <p class="text-gray-500 text-sm mt-1">Aqui está um resumo da sua situação financeira.</p>
     </div>
 
     <!-- Cards de métricas -->
@@ -143,16 +144,13 @@ function goToNegociacoes() {
         :aria-label="totalVencidas > 0 ? `Ver ${totalVencidas} parcela(s) em atraso` : 'Ver contratos'"
         :class="[
           'card w-full text-left min-h-[44px] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 transition-all',
-          totalVencidas > 0 ? 'border-red-200 bg-red-50 hover:border-red-300' : 'hover:border-blue-200'
+          totalVencidas > 0 ? 'border-red-500/20 bg-red-50 hover:border-red-500/40' : 'hover:border-blue-100'
         ]"
         @click="goToAtrasos"
       >
         <p class="section-title text-xs" :class="totalVencidas > 0 ? 'text-red-500' : ''">Em atraso</p>
         <p class="text-2xl font-bold mt-1" :class="totalVencidas > 0 ? 'text-red-700' : 'text-gray-400'">
           {{ totalVencidas }}
-        </p>
-        <p class="text-xs mt-1" :class="totalVencidas > 0 ? 'text-red-600' : 'text-gray-400'">
-          {{ totalVencidas > 0 ? formatMoney(totalEmAberto) : 'Tudo em dia!' }}
         </p>
         <div class="mt-3 flex items-center justify-between text-xs font-medium" :class="totalVencidas > 0 ? 'text-red-700' : 'text-blue-600'">
           <span>Ver detalhes</span>
@@ -171,7 +169,6 @@ function goToNegociacoes() {
       >
         <p class="section-title text-xs">Contratos</p>
         <p class="text-2xl font-bold text-gray-900 mt-1">{{ contratosAtivos }}</p>
-        <p class="text-xs text-gray-500 mt-1">Saldo: {{ formatMoney(saldoTotal) }}</p>
         <div class="mt-3 flex items-center justify-between text-xs font-medium text-blue-600">
           <span>Ver contratos</span>
           <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -210,9 +207,6 @@ function goToNegociacoes() {
       >
         <p class="section-title text-xs">Acordos</p>
         <p class="text-2xl font-bold text-gray-900 mt-1">{{ acordosAtivos }}</p>
-        <p class="text-xs mt-1" :class="negsPendentes > 0 ? 'text-amber-600' : 'text-gray-400'">
-          {{ negsPendentes > 0 ? `${negsPendentes} em análise` : 'Nenhum pendente' }}
-        </p>
         <div class="mt-3 flex items-center justify-between text-xs font-medium text-blue-600">
           <span>Ver negociações</span>
           <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -108,7 +108,7 @@ async function handleLogin() {
               <button
                 type="button"
                 @click="showSenha = !showSenha"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
               >
                 <svg v-if="!showSenha" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -161,11 +161,11 @@ async function handleLogin() {
             type="button"
             @click="fillCredentials(u)"
             class="flex flex-col items-center gap-1 rounded-lg px-2 py-2 transition-colors text-center"
-            :class="activeDemo === u.cpf ? 'bg-blue-100/80 ring-1 ring-blue-300' : 'hover:bg-blue-50'"
+            :class="activeDemo === u.cpf ? 'bg-blue-100/80 ring-1 ring-blue-600/30' : 'hover:bg-blue-50'"
           >
             <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold" :class="u.labelClass">{{ u.label }}</span>
-            <span class="text-blue-800 font-medium leading-tight">{{ u.nome.split(' ')[0] }}</span>
-            <svg v-if="activeDemo === u.cpf" class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+            <span class="text-blue-600 font-medium leading-tight">{{ u.nome.split(' ')[0] }}</span>
+            <svg v-if="activeDemo === u.cpf" class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
           </button>
         </div>
       </div>

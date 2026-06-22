@@ -56,6 +56,7 @@ function handleReset() {
   showDropdown.value = false
   resetFlow()
   resetRules()
+  router.push('/backoffice')
 }
 
 defineProps({
@@ -74,7 +75,7 @@ defineProps({
           <RouterLink :to="isManager ? '/backoffice/gerente' : '/backoffice/fila'" class="flex items-center gap-2">
             <img :src="baseUrl + 'dock.png'" alt="Logo" class="h-7 w-auto brightness-0 invert" />
             <!--
-            <span class="text-sm font-semibold text-gray-300">
+            <span class="text-sm font-semibold text-gray-400">
               {{ isManager ? 'Gestão de Crédito' : 'Mesa de Crédito' }}
             </span>
              -->
@@ -153,7 +154,7 @@ defineProps({
           </svg>
           {{ backLabel }}
         </RouterLink>
-        <span v-if="backTo && title" class="text-gray-300">/</span>
+        <span v-if="backTo && title" class="text-gray-400">/</span>
         <h1 v-if="title" class="text-lg font-semibold text-gray-900">{{ title }}</h1>
       </div>
     </div>

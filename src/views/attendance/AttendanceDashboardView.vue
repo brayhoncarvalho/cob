@@ -13,10 +13,6 @@ const { state: flowState } = useFlow()
 // ── Base de clientes (mock) ───────────────────────────────────────────────────
 const CLIENTES_BASE = [
   { cpf: '123.456.789-00', nome: 'João da Silva',    telefone: '(63) 95448-9531' },
-  { cpf: '321.654.987-00', nome: 'Maria Aparecida',  telefone: '(11) 98765-4321' },
-  { cpf: '456.789.123-00', nome: 'Carlos Ferreira',  telefone: '(21) 97654-3210' },
-  { cpf: '789.123.456-00', nome: 'Fernanda Rocha',   telefone: '(47) 96543-2109' },
-  { cpf: '147.258.369-00', nome: 'Roberto Mendes',   telefone: '(51) 95432-1098' },
 ]
 
 // Enriquecer clientes com dados de contratos e negociações
@@ -122,17 +118,17 @@ const metricas = computed(() => [
 
 // Urgência → config visual
 const URGENCIA_CONFIG = {
-  3: { border: 'border-l-4 border-amber-400', badge: 'bg-amber-100 text-amber-700', texto: 'Aguardando aprovação', dot: 'bg-amber-400 animate-pulse' },
-  2: { border: 'border-l-4 border-red-400',    badge: 'bg-red-100 text-red-700',    texto: 'Contrato em atraso',     dot: 'bg-red-400' },
-  1: { border: 'border-l-4 border-amber-300',  badge: 'bg-amber-100 text-amber-700', texto: 'Proposta em análise',    dot: 'bg-amber-400' },
-  0: { border: '',                              badge: '',                             texto: '',                       dot: 'bg-gray-300' },
+  3: { border: 'border-l-4 border-amber-500', badge: 'bg-amber-50 text-amber-700', texto: 'Aguardando aprovação', dot: 'bg-amber-500' },
+  2: { border: 'border-l-4 border-red-500',    badge: 'bg-red-50 text-red-700',    texto: 'Contrato em atraso',     dot: 'bg-red-500' },
+  1: { border: 'border-l-4 border-amber-500',  badge: 'bg-amber-50 text-amber-700', texto: 'Proposta em análise',    dot: 'bg-amber-500' },
+  0: { border: '',                              badge: '',                             texto: '',                       dot: 'bg-gray-400' },
 }
 
 const COR_METRICA = {
-  blue:   { bg: 'bg-blue-50 hover:bg-blue-100',   text: 'text-blue-700',   ring: 'ring-blue-400',   ativo: 'bg-blue-600 text-white' },
-  purple: { bg: 'bg-amber-50 hover:bg-amber-100', text: 'text-amber-700', ring: 'ring-amber-400', ativo: 'bg-amber-600 text-white' },
-  red:    { bg: 'bg-red-50 hover:bg-red-100',     text: 'text-red-700',    ring: 'ring-red-400',    ativo: 'bg-red-600 text-white' },
-  green:  { bg: 'bg-green-50 hover:bg-green-100', text: 'text-green-700',  ring: 'ring-green-400',  ativo: 'bg-green-600 text-white' },
+  blue:   { bg: 'bg-blue-50 hover:bg-blue-100',   text: 'text-blue-700',   ring: 'ring-blue-600',   ativo: 'bg-blue-600 text-white' },
+  purple: { bg: 'bg-amber-50 hover:bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-500', ativo: 'bg-amber-500 text-white' },
+  red:    { bg: 'bg-red-50 hover:bg-red-50',     text: 'text-red-700',    ring: 'ring-red-500',    ativo: 'bg-red-500 text-white' },
+  green:  { bg: 'bg-green-50 hover:bg-green-50', text: 'text-green-700',  ring: 'ring-green-500',  ativo: 'bg-green-500 text-white' },
 }
 
 function toggleFiltro(key) {
@@ -346,7 +342,7 @@ function initials(nome) {
               @click="iniciarAtendimento(c.cpf)"
               class="btn-primary text-sm py-2 px-4 whitespace-nowrap"
             >
-              Atender
+              Gerar proposta
             </button>
           </div>
         </div>

@@ -15,7 +15,6 @@ const valorMaxAutoAprovacao    = ref(rules.valorMaxAutoAprovacao)
 const alcada1NivelMax          = ref(rules.alcada1NivelMax)
 const parcelaMinimaValor       = ref(rules.parcelaMinimaValor)
 const prazoEntradaHoras        = ref(rules.prazoEntradaHoras)
-const cooldownCancelamentoDias = ref(rules.cooldownCancelamentoDias)
 const maxTentativasNegociacao  = ref(rules.maxTentativasNegociacao)
 const descontoAntecipacaoPct   = ref((rules.descontoAntecipacaoPct ?? 0.075) * 100)
 const atrasoMaxCancelamentoAcordoDias = ref(rules.atrasoMaxCancelamentoAcordoDias ?? 10)
@@ -41,7 +40,6 @@ function salvar() {
     alcada1NivelMax:           Number(alcada1NivelMax.value),
     parcelaMinimaValor:        Number(parcelaMinimaValor.value),
     prazoEntradaHoras:         Number(prazoEntradaHoras.value),
-    cooldownCancelamentoDias:  Number(cooldownCancelamentoDias.value),
     maxTentativasNegociacao:   Number(maxTentativasNegociacao.value),
     descontoAntecipacaoPct:    descontoAntecipacaoPct.value / 100,
     atrasoMaxCancelamentoAcordoDias: Number(atrasoMaxCancelamentoAcordoDias.value),
@@ -64,7 +62,6 @@ function restaurar() {
   alcada1NivelMax.value          = rules.alcada1NivelMax
   parcelaMinimaValor.value       = rules.parcelaMinimaValor
   prazoEntradaHoras.value        = rules.prazoEntradaHoras
-  cooldownCancelamentoDias.value = rules.cooldownCancelamentoDias
   maxTentativasNegociacao.value  = rules.maxTentativasNegociacao
   descontoAntecipacaoPct.value   = (rules.descontoAntecipacaoPct ?? 0.075) * 100
   atrasoMaxCancelamentoAcordoDias.value = rules.atrasoMaxCancelamentoAcordoDias ?? 10
@@ -101,7 +98,7 @@ const simEntrada = computed(() => {
         leave-from-class="opacity-100"
         leave-to-class="opacity-0 -translate-y-2"
       >
-        <div v-if="saved" class="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center gap-2 text-green-700 text-sm font-medium">
+        <div v-if="saved" class="bg-green-50 border border-green-500/25 rounded-xl px-4 py-3 flex items-center gap-2 text-green-700 text-sm font-medium">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           Parâmetros salvos! As novas regras já estão ativas para todo o sistema.
         </div>
@@ -114,7 +111,7 @@ const simEntrada = computed(() => {
         leave-from-class="opacity-100"
         leave-to-class="opacity-0 -translate-y-2"
       >
-        <div v-if="resetted" class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-2 text-amber-700 text-sm font-medium">
+        <div v-if="resetted" class="bg-amber-50 border border-amber-500/25 rounded-xl px-4 py-3 flex items-center gap-2 text-amber-700 text-sm font-medium">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
           Parâmetros restaurados para os valores padrão.
         </div>
@@ -124,7 +121,7 @@ const simEntrada = computed(() => {
       <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div class="px-5 py-4 border-b border-gray-100 bg-gray-50">
           <h3 class="font-semibold text-gray-900 flex items-center gap-2">
-            <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             Critérios de Auto-Aprovação
           </h3>
           <p class="text-xs text-gray-500 mt-1">Propostas que atendem TODOS estes critérios são aprovadas automaticamente, sem passar pela mesa.</p>
@@ -189,13 +186,7 @@ const simEntrada = computed(() => {
               <span class="text-sm font-bold text-blue-600 w-12 text-right">{{ prazoEntradaHoras }}h</span>
             </div>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Cooldown após cancelamento (dias)</label>
-            <div class="flex items-center gap-3">
-              <input v-model.number="cooldownCancelamentoDias" type="range" min="7" max="90" step="1" class="flex-1 accent-blue-500" />
-              <span class="text-sm font-bold text-blue-600 w-12 text-right">{{ cooldownCancelamentoDias }}d</span>
-            </div>
-          </div>
+
         </div>
       </div>
 
@@ -203,7 +194,7 @@ const simEntrada = computed(() => {
       <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div class="px-5 py-4 border-b border-gray-100 bg-gray-50">
           <h3 class="font-semibold text-gray-900 flex items-center gap-2">
-            <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
             Negociação e Acordo
           </h3>
           <p class="text-xs text-gray-500 mt-1">Regras que controlam tentativas, antecipação e cancelamento automático de acordos.</p>
@@ -212,31 +203,31 @@ const simEntrada = computed(() => {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Limite de tentativas por contrato</label>
             <div class="flex items-center gap-3">
-              <input v-model.number="maxTentativasNegociacao" type="range" min="1" max="10" step="1" class="flex-1 accent-amber-500" />
-              <span class="text-sm font-bold text-amber-600 w-10 text-right">{{ maxTentativasNegociacao }}x</span>
+              <input v-model.number="maxTentativasNegociacao" type="range" min="1" max="10" step="1" class="flex-1 accent-blue-600" />
+              <span class="text-sm font-bold text-blue-600 w-10 text-right">{{ maxTentativasNegociacao }}x</span>
             </div>
             <p class="text-xs text-gray-400 mt-1">Após {{ maxTentativasNegociacao }} proposta(s) por contrato, novas tentativas são bloqueadas.</p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Desconto de antecipação (%)</label>
             <div class="flex items-center gap-3">
-              <input v-model.number="descontoAntecipacaoPct" type="range" min="1" max="30" step="0.5" class="flex-1 accent-amber-500" />
-              <span class="text-sm font-bold text-amber-600 w-14 text-right">{{ descontoAntecipacaoPct }}%</span>
+              <input v-model.number="descontoAntecipacaoPct" type="range" min="1" max="30" step="0.5" class="flex-1 accent-blue-600" />
+              <span class="text-sm font-bold text-blue-600 w-14 text-right">{{ descontoAntecipacaoPct }}%</span>
             </div>
             <p class="text-xs text-gray-400 mt-1">Desconto sobre juros futuros ao antecipar parcelas.</p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Cancelamento por atraso (dias)</label>
             <div class="flex items-center gap-3">
-              <input v-model.number="atrasoMaxCancelamentoAcordoDias" type="range" min="3" max="30" step="1" class="flex-1 accent-amber-500" />
-              <span class="text-sm font-bold text-amber-600 w-10 text-right">{{ atrasoMaxCancelamentoAcordoDias }}d</span>
+              <input v-model.number="atrasoMaxCancelamentoAcordoDias" type="range" min="3" max="30" step="1" class="flex-1 accent-blue-600" />
+              <span class="text-sm font-bold text-blue-600 w-10 text-right">{{ atrasoMaxCancelamentoAcordoDias }}d</span>
             </div>
             <p class="text-xs text-gray-400 mt-1">Acordo cancelado automaticamente se parcela atrasar mais de {{ atrasoMaxCancelamentoAcordoDias }} dias.</p>
           </div>          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Meta de recuperação (%)</label>
             <div class="flex items-center gap-3">
-              <input v-model.number="metaRecuperacaoPct" type="range" min="10" max="100" step="5" class="flex-1 accent-amber-500" />
-              <span class="text-sm font-bold text-amber-600 w-10 text-right">{{ metaRecuperacaoPct }}%</span>
+              <input v-model.number="metaRecuperacaoPct" type="range" min="10" max="100" step="5" class="flex-1 accent-blue-600" />
+              <span class="text-sm font-bold text-blue-600 w-10 text-right">{{ metaRecuperacaoPct }}%</span>
             </div>
             <p class="text-xs text-gray-400 mt-1">Meta da barra de progresso no painel do gerente.</p>
           </div>        </div>
@@ -266,10 +257,10 @@ const simEntrada = computed(() => {
               :key="f.faixa"
               class="transition-all duration-300"
               :class="{
-                'bg-green-300': f.valor <= 5,
-                'bg-amber-300': f.valor > 5 && f.valor <= 15,
-                'bg-orange-400': f.valor > 15 && f.valor <= 25,
-                'bg-red-400': f.valor > 25,
+                'bg-blue-100': f.valor <= 5,
+                'bg-blue-600/40': f.valor > 5 && f.valor <= 15,
+                'bg-blue-600/70': f.valor > 15 && f.valor <= 25,
+                'bg-blue-600': f.valor > 25,
               }"
               :style="{ width: (100 / faixas.length) + '%' }"
               :title="`${f.faixa}d → ${f.valor}%`"

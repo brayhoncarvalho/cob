@@ -30,6 +30,7 @@ function handleReset() {
   showDropdown.value = false
   resetFlow()
   resetRules()
+  router.push('/atendimento')
 }
 
 defineProps({
@@ -57,14 +58,14 @@ defineProps({
             @click="showDropdown = !showDropdown"
             class="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-blue-600 transition-colors"
           >
-            <div class="w-8 h-8 rounded-full bg-blue-400 flex items-center justify-center shrink-0">
-              <span class="text-xs font-bold text-blue-900 leading-none">{{ userInitials }}</span>
+            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+              <span class="text-xs font-bold text-blue-600 leading-none">{{ userInitials }}</span>
             </div>
             <div class="hidden sm:block text-left">
               <p class="text-sm font-medium text-white leading-none">{{ state.user?.nome?.split(' ')[0] }}</p>
-              <p class="text-xs text-blue-300 mt-0.5">Atendente</p>
+              <p class="text-xs text-blue-100 mt-0.5">Atendente</p>
             </div>
-            <svg class="hidden sm:block w-3.5 h-3.5 text-blue-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            <svg class="hidden sm:block w-3.5 h-3.5 text-blue-100" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
           </button>
 
           <div
@@ -103,7 +104,7 @@ defineProps({
     <main class="max-w-7xl mx-auto px-4 py-6">
       <!-- Back link -->
       <div v-if="backTo" class="mb-4">
-        <RouterLink :to="backTo" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors">
+        <RouterLink :to="backTo" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
           </svg>

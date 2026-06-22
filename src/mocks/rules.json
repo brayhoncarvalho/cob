@@ -6,7 +6,6 @@
   "alcada1NivelMax": 20000,
   "parcelaMinimaValor": 100,
   "prazoEntradaHoras": 48,
-  "cooldownCancelamentoDias": 30,
   "maxTentativasNegociacao": 3,
   "descontoAntecipacaoPct": 0.075,
   "atrasoMaxCancelamentoAcordoDias": 10,

@@ -144,7 +144,7 @@ function inserirVariavel(v) {
           leave-active-class="transition-all duration-200"
           leave-to-class="opacity-0"
         >
-          <div v-if="resetted" class="mt-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">
+          <div v-if="resetted" class="mt-2 bg-amber-50 border border-amber-500/25 rounded-lg px-3 py-2 text-xs text-amber-700">
             Templates restaurados para o padrão.
           </div>
         </Transition>
@@ -254,7 +254,7 @@ function inserirVariavel(v) {
               <!-- Preview WhatsApp -->
               <div v-else-if="canalAtivo === 'whatsapp'" class="p-4 flex-1">
                 <div class="max-w-xs">
-                  <div class="bg-[#dcf8c6] rounded-2xl rounded-tl-none px-4 py-3 text-sm text-gray-800 shadow-sm leading-relaxed" v-html="previewCorpo" />
+                  <div class="bg-green-50 rounded-2xl rounded-tl-none px-4 py-3 text-sm text-gray-800 shadow-sm leading-relaxed" v-html="previewCorpo" />
                   <p class="text-xs text-gray-400 mt-1 text-right">Agora · ✓✓</p>
                 </div>
               </div>

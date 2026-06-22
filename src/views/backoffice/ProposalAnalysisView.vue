@@ -202,7 +202,7 @@ async function confirmar() {
         <!-- Coluna decisão -->
         <div class="space-y-4">
 
-          <div v-if="precisaEscalar" class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 flex items-start gap-2">
+          <div v-if="precisaEscalar" class="bg-red-50 border border-red-500/25 rounded-xl p-4 text-sm text-red-700 flex items-start gap-2">
             <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l7.5-7.5 7.5 7.5m-15 6l7.5-7.5 7.5 7.5"/></svg>
             <span><strong>Atenção:</strong> Dívida acima da alçada do 1º Nível ({{ formatMoney(rules.alcada1NivelMax) }}). Escalone para o 2º Nível.</span>
           </div>
@@ -213,21 +213,21 @@ async function confirmar() {
             <div class="grid grid-cols-3 gap-2 mb-4">
               <button
                 @click="decisao = 'aprovar'"
-                :class="['p-3 rounded-xl border-2 text-sm font-semibold transition-all text-center flex items-center justify-center gap-1.5', decisao === 'aprovar' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600 hover:border-green-300']"
+                :class="['p-3 rounded-xl border-2 text-sm font-semibold transition-all text-center flex items-center justify-center gap-1.5', decisao === 'aprovar' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600 hover:border-green-500']"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
                 Aprovar
               </button>
               <button
                 @click="decisao = 'reprovar'"
-                :class="['p-3 rounded-xl border-2 text-sm font-semibold transition-all text-center flex items-center justify-center gap-1.5', decisao === 'reprovar' ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600 hover:border-red-300']"
+                :class="['p-3 rounded-xl border-2 text-sm font-semibold transition-all text-center flex items-center justify-center gap-1.5', decisao === 'reprovar' ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600 hover:border-red-500']"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 Reprovar
               </button>
               <button
                 @click="decisao = 'contraproposta'"
-                :class="['p-3 rounded-xl border-2 text-sm font-semibold transition-all text-center flex items-center justify-center gap-1.5', decisao === 'contraproposta' ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-600 hover:border-amber-300']"
+                :class="['p-3 rounded-xl border-2 text-sm font-semibold transition-all text-center flex items-center justify-center gap-1.5', decisao === 'contraproposta' ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-600 hover:border-amber-500']"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
                 Contra
@@ -258,7 +258,7 @@ async function confirmar() {
                 <input v-model="contraParcelas" type="number" min="1" max="24" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <!-- Valor parcela calculado automaticamente -->
-              <div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+              <div class="rounded-lg bg-amber-50 border border-amber-500/25 px-3 py-2">
                 <p class="text-xs text-amber-600 mb-0.5">Valor da parcela (calculado)</p>
                 <p class="font-bold text-amber-800 text-sm">
                   {{ contraValorParc > 0 ? formatMoney(contraValorParc) : '—' }}
@@ -287,7 +287,7 @@ async function confirmar() {
             <p class="text-xs text-gray-400 text-center mb-2">Fora da sua alçada?</p>
             <button
               @click="decisao = 'escalar'; confirmar()"
-              class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 text-gray-600 text-sm font-medium transition-all"
+              class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-amber-50 hover:border-amber-500 hover:text-amber-700 text-gray-600 text-sm font-medium transition-all"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/>

@@ -12,7 +12,13 @@ const { state, clear } = useProposal()
 const { acceptCounter, state: flowState } = useFlow()
 
 onMounted(() => {
-  if (!state.proposal) router.replace('/contratos')
+  if (!state.proposal) return router.replace('/contratos')
+  // Estado stale de bloqueio não deve aparecer como resultado — redireciona de volta
+  if (state.result?.scenario?.startsWith('blocked')) {
+    const id = state.proposal?.contratoId
+    clear()
+    return router.replace(id ? `/contratos/${id}/negociar` : '/contratos')
+  }
 })
 
 const scenario = computed(() => state.result?.scenario ?? 'auto')
@@ -51,8 +57,9 @@ const stepperSteps = [
 ]
 
 function goNovaProposta() {
+  const contratoId = proposal.value?.contratoId
   clear()
-  router.push(`/contratos/${proposal.value?.contratoId}/negociar`)
+  router.push(contratoId ? `/contratos/${contratoId}/negociar` : '/contratos')
 }
 
 function handleAcceptCounter() {
@@ -221,7 +228,7 @@ function handleAcceptCounter() {
           </div>
 
           <!-- Contraproposta REAL do flow store -->
-          <div v-if="scenario === 'contraproposta' && contrapropostaReal" class="card mb-4 border-amber-200 bg-amber-50">
+          <div v-if="scenario === 'contraproposta' && contrapropostaReal" class="card mb-4 border-amber-500/25 bg-amber-50">
             <h3 class="font-semibold text-amber-800 mb-3">Condição especial oferecida</h3>
             <div class="space-y-2 text-sm">
               <div class="flex justify-between">
@@ -232,7 +239,7 @@ function handleAcceptCounter() {
                 <span class="text-amber-700">Parcelas</span>
                 <span class="font-medium text-amber-900">{{ contrapropostaReal.numParcelas }}x de {{ formatMoney(contrapropostaReal.valorParcela) }}</span>
               </div>
-              <div class="border-t border-amber-200 pt-2 flex justify-between">
+              <div class="border-t border-amber-500/25 pt-2 flex justify-between">
                 <span class="font-semibold text-amber-800">Total</span>
                 <span class="font-bold text-amber-900">{{ formatMoney(contrapropostaReal.total) }}</span>
               </div>
@@ -241,7 +248,7 @@ function handleAcceptCounter() {
           </div>
 
           <!-- Fallback se contraproposta ainda não chegou -->
-          <div v-else-if="scenario === 'contraproposta' && !contrapropostaReal" class="card mb-4 border-amber-200 bg-amber-50 text-center py-4">
+          <div v-else-if="scenario === 'contraproposta' && !contrapropostaReal" class="card mb-4 border-amber-500/25 bg-amber-50 text-center py-4">
             <p class="text-amber-700 text-sm">Carregando detalhes da contraproposta…</p>
           </div>
 

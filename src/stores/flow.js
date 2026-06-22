@@ -64,20 +64,6 @@ function _verificarBloqueio(contratoId) {
 
   const negsDoContrato = state.negotiations.filter(n => n.contratoId === contratoId)
 
-  // Bloqueio por cooldown: acordo cancelado recentemente
-  const cancelada = negsDoContrato
-    .filter(n => n.status === 'cancelada' && n.dataCancelamento)
-    .sort((a, b) => b.dataCancelamento.localeCompare(a.dataCancelamento))[0]
-
-  if (cancelada) {
-    const diasDesde = (Date.now() - new Date(cancelada.dataCancelamento)) / 86400000
-    const cooldown  = rules.cooldownCancelamentoDias ?? 30
-    if (diasDesde < cooldown) {
-      const diasRestantes = Math.ceil(cooldown - diasDesde)
-      return `blocked_cooldown:${diasRestantes}`
-    }
-  }
-
   // Bloqueio por limite de tentativas
   const tentativas = negsDoContrato.filter(n =>
     ['em_analise', 'contraproposta', 'em_pagamento', 'aprovada', 'reprovada', 'cancelada', 'quitado'].includes(n.status)

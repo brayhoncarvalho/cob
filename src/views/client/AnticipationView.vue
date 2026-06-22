@@ -99,7 +99,7 @@ function gerarPix() {
 
         <!-- Resultado da antecipação -->
         <div class="space-y-4">
-          <div class="card border-2" :class="selecionadas.size > 0 ? 'border-green-200 bg-green-50' : 'border-gray-100'">
+          <div class="card border-2" :class="selecionadas.size > 0 ? 'border-green-500/25 bg-green-50' : 'border-gray-100'">
             <h3 class="font-semibold mb-3" :class="selecionadas.size > 0 ? 'text-green-800' : 'text-gray-700'">
               Resultado da antecipação
             </h3>
@@ -122,7 +122,7 @@ function gerarPix() {
                   <span>Desconto por antecipação</span>
                   <span class="font-semibold">- {{ formatMoney(desconto) }}</span>
                 </div>
-                <div class="border-t border-green-200 pt-2 flex justify-between">
+                <div class="border-t border-green-500/25 pt-2 flex justify-between">
                   <span class="font-bold text-green-800">VALOR A PAGAR HOJE</span>
                   <span class="font-bold text-green-800 text-base">{{ formatMoney(valorFinal) }}</span>
                 </div>

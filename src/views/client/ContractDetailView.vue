@@ -123,34 +123,31 @@ const parcelasEmAberto = computed(() =>
         </div>
 
         <!-- Métricas principais -->
-        <div class="grid grid-cols-3 gap-4 text-sm">
-          <div>
-            <p class="text-gray-400 text-xs mb-0.5">Valor contratado</p>
-            <p class="font-semibold text-gray-900">{{ formatMoney(contract.valorContratado) }}</p>
-          </div>
+        <div class="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p class="text-gray-400 text-xs mb-0.5">Saldo devedor</p>
-            <p class="font-semibold" :class="contract.parcelasVencidas > 0 ? 'text-red-600' : 'text-gray-900'">
+            <p class="font-semibold" :class="contract.parcelasVencidas > 0 ? 'text-red-700' : 'text-gray-900'">
               {{ formatMoney(contract.saldoDevedor) }}
             </p>
           </div>
           <div>
-            <p class="text-gray-400 text-xs mb-0.5">Parcelas pagas</p>
+            <p class="text-gray-400 text-xs mb-0.5">Parcelas</p>
             <p class="font-semibold text-gray-900">{{ contract.parcelasPagas }}/{{ contract.totalParcelas }}</p>
           </div>
         </div>
 
-        <!-- Informações secundárias -->
+        <!-- Info secundária compacta -->
         <div class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-400">
+          <span>{{ formatMoney(contract.valorContratado) }} contratado</span>
+          <span>{{ contract.taxaJuros }}% a.m.</span>
           <span>Contratado em {{ formatDate(contract.dataContratacao) }}</span>
-          <span>Taxa {{ contract.taxaJuros }}% a.m.</span>
         </div>
 
-        <!-- Encargos de atraso (colapsável) -->
-        <div v-if="contract.parcelasVencidas > 0" class="mt-4">
+        <!-- Encargos de atraso (colapsável) — só exibe se não há acordo ativo -->
+        <div v-if="contract.parcelasVencidas > 0 && !acordoAtivo" class="mt-4">
           <button
             @click="showEncargos = !showEncargos"
-            class="w-full flex items-center justify-between gap-2 bg-red-50 border border-red-100 rounded-lg px-4 py-2.5 text-left transition-colors hover:bg-red-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+            class="w-full flex items-center justify-between gap-2 bg-red-50 border border-red-500/20 rounded-lg px-4 py-2.5 text-left transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
             :aria-expanded="showEncargos"
           >
             <div class="flex items-center gap-2">
@@ -179,7 +176,7 @@ const parcelasEmAberto = computed(() =>
             leave-active-class="transition-all duration-150"
             leave-to-class="opacity-0"
           >
-            <div v-if="showEncargos" class="mt-1 border border-red-100 rounded-lg overflow-hidden">
+            <div v-if="showEncargos" class="mt-1 border border-red-500/20 rounded-lg overflow-hidden">
               <div class="px-4 py-1.5 bg-red-50 flex justify-end">
                 <span class="text-xs text-red-400">Parcelas {{ contract.parcelas.filter(p=>p.status==='vencida').map(p=>p.numero).join(', ') }}</span>
               </div>
@@ -221,7 +218,7 @@ const parcelasEmAberto = computed(() =>
         </div>
 
         <!-- Banner de quitação -->
-        <div v-if="contract.status === 'quitado'" class="mt-4 rounded-xl bg-green-50 border border-green-200 px-4 py-4 flex items-start gap-3">
+        <div v-if="contract.status === 'quitado'" class="mt-4 rounded-xl bg-green-50 border border-green-500/25 px-4 py-4 flex items-start gap-3">
           <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           </div>
@@ -258,7 +255,7 @@ const parcelasEmAberto = computed(() =>
             <!-- Checkbox visual -->
             <div
               class="shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all"
-              :class="selecionadas.has(p.numero) ? 'bg-blue-600 border-blue-600' : p.status === 'vencida' ? 'border-red-300 bg-white' : 'border-amber-300 bg-white'"
+              :class="selecionadas.has(p.numero) ? 'bg-blue-600 border-blue-600' : p.status === 'vencida' ? 'border-red-500 bg-white' : 'border-amber-500 bg-white'"
             >
               <svg v-if="selecionadas.has(p.numero)" class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
@@ -322,7 +319,24 @@ const parcelasEmAberto = computed(() =>
 
       <!-- Extrato de parcelas -->
       <div class="card mb-6">
-        <h3 class="font-semibold text-gray-900 mb-4">Extrato de parcelas</h3>
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <h3 class="font-semibold text-gray-900">Extrato de parcelas</h3>
+          <div class="flex flex-wrap gap-2">
+            <RouterLink
+              :to="`/contratos/${contract.id}/antecipar`"
+              class="btn-secondary text-sm py-1.5 px-3"
+            >
+              Antecipar Parcelas
+            </RouterLink>
+            <RouterLink
+              v-if="contract.parcelasVencidas > 0 && !contract.acordoAtivo"
+              :to="`/contratos/${contract.id}/negociar`"
+              class="btn-primary text-sm py-1.5 px-3"
+            >
+              Negociar
+            </RouterLink>
+          </div>
+        </div>
 
         <div class="overflow-x-auto -mx-6 px-6">
           <table class="w-full text-sm min-w-[460px]">
@@ -340,13 +354,14 @@ const parcelasEmAberto = computed(() =>
                 v-for="p in parcelasExibidas"
                 :key="p.numero"
                 :class="[
-                  p.status === 'vencida' ? 'bg-red-50' : '',
-                  p.status === 'proxima' ? 'bg-amber-50' : '',
+                  p.status === 'vencida' && !acordoAtivo ? 'bg-red-50' : '',
+                  p.status === 'vencida' && acordoAtivo ? 'bg-blue-100' : '',
+                  p.status === 'proxima' ? 'bg-blue-100' : '',
                 ]"
               >
                 <td class="py-2.5 text-gray-500 font-mono text-xs">{{ p.numero }}</td>
                 <td class="py-2.5">
-                  <span :class="p.status === 'vencida' ? 'text-red-700 font-medium' : ''">
+                  <span :class="p.status === 'vencida' && !acordoAtivo ? 'text-red-700 font-medium' : 'text-gray-700'">
                     {{ formatDate(p.vencimento) }}
                   </span>
                 </td>
@@ -355,11 +370,11 @@ const parcelasEmAberto = computed(() =>
                   <span v-else class="text-gray-300">—</span>
                 </td>
                 <td class="py-2.5 text-right font-semibold">
-                  <span :class="p.status === 'vencida' ? 'text-red-700' : 'text-gray-900'">{{ formatMoney(p.valorAtualizado) }}</span>
+                  <span :class="p.status === 'vencida' && !acordoAtivo ? 'text-red-700' : 'text-gray-900'">{{ formatMoney(p.valorAtualizado) }}</span>
                   <span v-if="p.valorAtualizado !== p.valor" class="block text-xs text-gray-400 line-through">{{ formatMoney(p.valor) }}</span>
                 </td>
                 <td class="py-2.5 text-center">
-                  <StatusBadge :status="p.status" small />
+                  <StatusBadge :status="acordoAtivo && p.status === 'vencida' ? 'em_acordo' : p.status" small />
                 </td>
               </tr>
             </tbody>
@@ -373,23 +388,6 @@ const parcelasEmAberto = computed(() =>
         >
           {{ showAll ? 'Ver menos' : `Ver todas as ${contract.parcelas.length} parcelas` }}
         </button>
-      </div>
-
-      <!-- Botões de ação -->
-      <div class="flex flex-wrap gap-3">
-        <RouterLink
-          :to="`/contratos/${contract.id}/antecipar`"
-          class="btn-secondary"
-        >
-          Antecipar Parcelas
-        </RouterLink>
-        <RouterLink
-          v-if="contract.parcelasVencidas > 0 && !contract.acordoAtivo"
-          :to="`/contratos/${contract.id}/negociar`"
-          class="btn-primary"
-        >
-          Negociar Contrato
-        </RouterLink>
       </div>
     </template>
     <div class="h-16 sm:hidden" />

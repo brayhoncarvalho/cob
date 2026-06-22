@@ -1,46 +1,49 @@
 /** @type {import('tailwindcss').Config} */
 
-// ── Dock Design System — paleta de cores ──────────────────────────────────────
+// ── Dock Design System — paleta convergida ────────────────────────────────────
+// Regra: apenas 3 tons visuais por cor. Shades extras apontam para o tom mais próximo.
+// Isso garante consistência visual mesmo com classes legadas (blue-500, blue-800, etc.)
+
+const T = '#f8fafc'   // tertiary bg
+const S = '#e7f2ff'   // secondary surface
+const P = '#0b4f9e'   // primary action
+const H = '#0a417f'   // hover de primary
+
 const primary = {
-  50: '#f8fafc', 100: '#e7f2ff', 200: '#d2e6ff', 300: '#b3d9ff',
-  400: '#6dbbfe', 500: '#1e96fc', 600: '#0b4f9e', 700: '#0a417f',
-  800: '#082c66', 900: '#071a52',
+  50: T, 100: S, 200: S, 300: S,
+  400: P, 500: P, 600: P,
+  700: H, 800: P, 900: P,
 }
-const secondary = {
-  50: '#f0fefe', 100: '#e0fafa', 200: '#b3f1f1', 300: '#70e8e8',
-  400: '#1adddd', 500: '#00d8d8', 600: '#00aeae', 700: '#008888',
-  800: '#006464', 900: '#004444',
-}
-const navy = {
-  50: '#eef2f8', 100: '#d8e1ef', 200: '#b3c2dc', 300: '#7f9abf',
-  400: '#4d74a2', 500: '#2b5080', 600: '#243854', 700: '#1a2e4a',
-  800: '#0f1e33', 900: '#0a1628',
-}
+
 const dsGray = {
-  50: '#f7f8fa', 100: '#eef0f4', 200: '#d6dae4', 300: '#b8bec9',
-  400: '#9198a8', 500: '#737b8f', 600: '#5a6278', 700: '#434b60',
-  800: '#2c3345', 900: '#0f1420',
+  50:  '#f7f8fa',  // page bg
+  100: '#eef0f4',  // surface / card
+  200: '#d6dae4',  // borders
+  300: '#d6dae4',  // alias → borders
+  400: '#9198a8',  // muted text
+  500: '#737b8f',  // secondary text
+  600: '#737b8f',  // alias → secondary text
+  700: '#434b60',  // primary text
+  800: '#434b60',  // alias → primary text
+  900: '#0f1420',  // headings
 }
+
 const success = {
-  50: '#f0fdf8', 100: '#ccfaed', 200: '#99f5d9', 300: '#5cebbf',
-  400: '#16e193', 500: '#00c27a', 600: '#009b61', 700: '#007549',
-  800: '#005533', 900: '#003320',
+  50: '#f0fdf8', 100: '#f0fdf8', 200: '#f0fdf8', 300: '#f0fdf8',
+  400: '#00c27a', 500: '#00c27a', 600: '#00c27a',
+  700: '#007549', 800: '#007549', 900: '#007549',
 }
+
 const danger = {
-  50: '#fff0f3', 100: '#ffd0da', 200: '#ffa0b5', 300: '#ff7290',
-  400: '#f55078', 500: '#e8335a', 600: '#c42047', 700: '#9e1037',
-  800: '#7a0a28', 900: '#5a0018',
+  50: '#fff0f3', 100: '#fff0f3', 200: '#fff0f3', 300: '#fff0f3',
+  400: '#e8335a', 500: '#e8335a', 600: '#e8335a',
+  700: '#9e1037', 800: '#9e1037', 900: '#9e1037',
 }
+
 const warning = {
-  50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 300: '#fcd34d',
-  400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309',
-  800: '#92400e', 900: '#78350f',
-}
-// Purple mantido (Tailwind default) para estados de contraproposta / pending
-const purple = {
-  50: '#faf5ff', 100: '#f3e8ff', 200: '#e9d5ff', 300: '#d8b4fe',
-  400: '#c084fc', 500: '#a855f7', 600: '#9333ea', 700: '#7e22ce',
-  800: '#6b21a8', 900: '#581c87',
+  50: '#fffbeb', 100: '#fffbeb', 200: '#fffbeb', 300: '#fffbeb',
+  400: '#f59e0b', 500: '#f59e0b', 600: '#f59e0b',
+  700: '#b45309', 800: '#b45309', 900: '#b45309',
 }
 
 export default {
@@ -49,7 +52,6 @@ export default {
     './src/**/*.{vue,js,ts,jsx,tsx}',
   ],
   theme: {
-    // Substituir escalas padrão do Tailwind pelos tokens do DS Dock
     colors: {
       transparent: 'transparent',
       current: 'currentColor',
@@ -57,20 +59,15 @@ export default {
       black: '#000000',
 
       // Escalas semânticas DS Dock
-      primary,   // nome canônico
-      secondary, // ciano Dock
-      navy,      // fundo escuro / backoffice
-      success,   // aprovação
-      danger,    // erro / destrutivo
-      warning,   // atenção
+      primary,
+      success,
+      danger,
+      warning,
       gray: dsGray,
-      purple,    // contraproposta / pending states
 
       // Aliases Tailwind → DS (mantém classes existentes funcionando)
       blue:    primary,
       indigo:  primary,
-      teal:    secondary,
-      cyan:    secondary,
       green:   success,
       emerald: success,
       red:     danger,
@@ -89,4 +86,3 @@ export default {
   },
   plugins: [],
 }
-

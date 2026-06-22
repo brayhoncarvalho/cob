@@ -10,10 +10,10 @@ const router = useRouter()
 const { formatMoney } = useFormatters()
 const { state: flowState } = useFlow()
 
-// Contratos ativos primeiro, encerrados por último
+// Ordem: débito > negociação > em dia > quitado
 const contracts = computed(() =>
   [...flowState.contracts].sort((a, b) => {
-    const order = { em_atraso: 0, em_dia: 1, renegociado: 2, quitado: 3 }
+    const order = { em_atraso: 0, renegociado: 1, em_dia: 2, quitado: 3 }
     return (order[a.status] ?? 2) - (order[b.status] ?? 2)
   })
 )
@@ -55,7 +55,7 @@ function totalVencidoContrato(c) {
                 <p class="text-gray-500 text-xs">Parcelas</p>
                 <p class="font-semibold text-gray-900">{{ c.parcelasPagas }}/{{ c.totalParcelas }}</p>
               </div>
-              <div v-if="c.parcelasVencidas > 0">
+              <div v-if="c.parcelasVencidas > 0 && !c.acordoAtivo">
                 <p class="text-gray-500 text-xs">Vencidas</p>
                 <p class="font-semibold text-red-600">{{ c.parcelasVencidas }}x — {{ formatMoney(totalVencidoContrato(c)) }}</p>
               </div>
@@ -78,7 +78,7 @@ function totalVencidoContrato(c) {
               <div class="w-full bg-gray-100 rounded-full h-1.5">
                 <div
                   class="h-1.5 rounded-full transition-all"
-                  :class="c.status === 'quitado' ? 'bg-green-500' : c.status === 'em_atraso' ? 'bg-red-400' : 'bg-blue-500'"
+                  :class="c.status === 'quitado' ? 'bg-green-500' : (c.status === 'em_atraso' && !c.acordoAtivo) ? 'bg-red-400' : 'bg-blue-500'"
                   :style="{ width: `${(c.parcelasPagas / c.totalParcelas) * 100}%` }"
                 />
               </div>
@@ -93,7 +93,7 @@ function totalVencidoContrato(c) {
         <!-- Ações rápidas -->
         <div class="flex gap-2 mt-4 pt-4 border-t border-gray-100" @click.stop>
           <RouterLink
-            v-if="c.parcelasVencidas > 0"
+            v-if="c.parcelasVencidas > 0 && !c.acordoAtivo"
             :to="`/contratos/${c.id}/pagar`"
             class="btn-danger text-sm py-2 px-4"
           >

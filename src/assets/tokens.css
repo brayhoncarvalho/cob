@@ -1,95 +1,38 @@
 /* ============================================================
    DOCK DESIGN SYSTEM — tokens.css
-   Fonte: shared-design-system-vue-lib/tokens.css
+   Paleta padronizada: 3 azuis + gray + semânticas (3 tons cada)
    ============================================================ */
 
 :root {
-  /* ── Cores Primárias (azul técnico/marca) ── */
-  --color-primary-50:  #f8fafc;
-  --color-primary-100: #e7f2ff;
-  --color-primary-200: #d2e6ff;
-  --color-primary-300: #b3d9ff;
-  --color-primary-400: #6dbbfe;
-  --color-primary-500: #1e96fc; /* brand primary */
-  --color-primary-600: #0b4f9e;
-  --color-primary-700: #0a417f;
-  --color-primary-800: #082c66;
-  --color-primary-900: #071a52;
+  /* ── Primária (azul Dock) — 3 tons + hover ── */
+  --color-primary-50:  #f8fafc; /* tertiary: bg sutil */
+  --color-primary-100: #e7f2ff; /* secondary: surfaces ativas */
+  --color-primary-600: #0b4f9e; /* primary: ações, headers, CTAs */
+  --color-primary-700: #0a417f; /* hover de primary */
 
-  /* ── Secundária (ciano Dock) ── */
-  --color-secondary-50:  #f0fefe;
-  --color-secondary-100: #e0fafa;
-  --color-secondary-200: #b3f1f1;
-  --color-secondary-300: #70e8e8;
-  --color-secondary-400: #1adddd;
-  --color-secondary-500: #00d8d8; /* ciano Dock */
-  --color-secondary-600: #00aeae;
-  --color-secondary-700: #008888;
-  --color-secondary-800: #006464;
-  --color-secondary-900: #004444;
+  /* ── Cinzas DS — 5 tons ── */
+  --color-gray-50:  #f7f8fa; /* bg-page */
+  --color-gray-100: #eef0f4; /* surface / border light */
+  --color-gray-200: #d6dae4; /* border default */
+  --color-gray-400: #9198a8; /* texto muted */
+  --color-gray-500: #737b8f; /* texto secundário */
+  --color-gray-700: #434b60; /* texto principal */
+  --color-gray-900: #0f1420; /* headings */
 
-  /* ── Navy (fundo escuro / backoffice) ── */
-  --color-navy-50:  #eef2f8;
-  --color-navy-100: #d8e1ef;
-  --color-navy-200: #b3c2dc;
-  --color-navy-300: #7f9abf;
-  --color-navy-400: #4d74a2;
-  --color-navy-500: #2b5080;
-  --color-navy-600: #243854;
-  --color-navy-700: #1a2e4a;
-  --color-navy-800: #0f1e33;
-  --color-navy-900: #0a1628;
-
-  /* ── Cinzas DS ── */
-  --color-gray-50:  #f7f8fa;
-  --color-gray-100: #eef0f4;
-  --color-gray-200: #d6dae4;
-  --color-gray-300: #b8bec9;
-  --color-gray-400: #9198a8;
-  --color-gray-500: #737b8f;
-  --color-gray-600: #5a6278;
-  --color-gray-700: #434b60;
-  --color-gray-800: #2c3345;
-  --color-gray-900: #0f1420;
-
-  /* ── Sucesso ── */
+  /* ── Sucesso — 3 tons ── */
   --color-success-50:  #f0fdf8;
-  --color-success-100: #ccfaed;
-  --color-success-200: #99f5d9;
-  --color-success-300: #5cebbf;
-  --color-success-400: #16e193;
-  --color-success-500: #00c27a; /* verde semântico */
-  --color-success-600: #009b61;
+  --color-success-500: #00c27a;
   --color-success-700: #007549;
-  --color-success-800: #005533;
-  --color-success-bg:  #e6faf3;
-  --color-success-text: #008f5a;
 
-  /* ── Perigo ── */
+  /* ── Perigo — 3 tons ── */
   --color-danger-50:  #fff0f3;
-  --color-danger-100: #ffd0da;
-  --color-danger-200: #ffa0b5;
-  --color-danger-300: #ff7290;
-  --color-danger-400: #f55078;
-  --color-danger-500: #e8335a; /* vermelho semântico */
-  --color-danger-600: #c42047;
+  --color-danger-500: #e8335a;
   --color-danger-700: #9e1037;
-  --color-danger-800: #7a0a28;
-  --color-danger-bg:   #fceef2;
-  --color-danger-text: #b01f41;
 
-  /* ── Atenção ── */
+  /* ── Atenção — 3 tons ── */
   --color-warning-50:  #fffbeb;
-  --color-warning-100: #fef3c7;
-  --color-warning-200: #fde68a;
-  --color-warning-300: #fcd34d;
-  --color-warning-400: #fbbf24;
-  --color-warning-500: #f59e0b; /* amarelo atenção */
-  --color-warning-600: #d97706;
+  --color-warning-500: #f59e0b;
   --color-warning-700: #b45309;
-  --color-warning-800: #92400e;
-  --color-warning-bg:   #fef6e4;
-  --color-warning-text: #92400e;
 
   /* ── Semânticas de superfície ── */
   --color-bg-page:    #f7f8fa;

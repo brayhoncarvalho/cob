@@ -30,6 +30,7 @@ function handleReset() {
   showDropdown.value = false
   resetFlow()
   resetRules()
+  router.push('/dashboard')
 }
 
 defineProps({
@@ -99,7 +100,7 @@ defineProps({
               <span class="hidden sm:block text-sm font-medium text-white">
                 {{ state.user?.nome?.split(' ')[0] }}
               </span>
-              <svg class="hidden sm:block w-3.5 h-3.5 text-blue-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+              <svg class="hidden sm:block w-3.5 h-3.5 text-blue-100" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
             </button>
 
             <!-- Dropdown -->
@@ -148,7 +149,7 @@ defineProps({
           </svg>
           {{ backLabel }}
         </RouterLink>
-        <span v-if="backTo && title" class="text-gray-300">/</span>
+        <span v-if="backTo && title" class="text-gray-400">/</span>
         <h1 v-if="title" class="text-lg font-semibold text-gray-900">{{ title }}</h1>
       </div>
     </div>
