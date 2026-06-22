@@ -160,7 +160,7 @@ function goToNegociacoes() {
     <div
       v-for="neg in contrapropostasPendentes"
       :key="neg.id"
-      class="mb-4 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 text-white p-4 shadow-lg"
+      class="mb-4 rounded-2xl bg-gradient-to-r from-blue-700 to-blue-500 text-white p-4 shadow-lg"
     >
       <div class="flex items-start justify-between gap-4">
         <div class="flex items-start gap-3">
@@ -171,15 +171,15 @@ function goToNegociacoes() {
           </div>
           <div>
             <p class="font-bold text-sm">Contraproposta recebida!</p>
-            <p class="text-xs text-amber-100 mt-0.5">
+            <p class="text-xs text-blue-100 mt-0.5">
               Contrato #{{ neg.contratoId }} &middot; Nova entrada: <strong class="text-white">{{ formatMoney(neg.contraproposta?.entrada ?? neg.entrada) }}</strong> &middot; {{ neg.contraproposta?.numParcelas ?? neg.numParcelas }}x de {{ formatMoney(neg.contraproposta?.valorParcela ?? neg.valorParcela) }}
             </p>
-            <p class="text-xs text-amber-100 mt-0.5">Protocolo: <span class="font-mono">{{ neg.id }}</span></p>
+            <p class="text-xs text-blue-100 mt-0.5">Protocolo: <span class="font-mono">{{ neg.id }}</span></p>
           </div>
         </div>
         <RouterLink
           :to="`/contratos/${neg.contratoId}`"
-          class="shrink-0 bg-white text-amber-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-amber-50 transition whitespace-nowrap shadow"
+          class="shrink-0 bg-white text-blue-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-blue-50 transition whitespace-nowrap shadow"
         >
           Ver proposta
         </RouterLink>
