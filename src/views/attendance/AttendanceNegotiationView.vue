@@ -493,7 +493,7 @@ function confirmPayment() {
         </div>
 
         <!-- Monte a proposta -->
-        <div v-if="contract && !contract.acordoAtivo" class="card mb-6">
+        <div v-if="contract && !acordoVivo" class="card mb-6">
           <h3 class="font-semibold text-gray-900 mb-4">Monte a proposta</h3>
 
           <!-- Toggle 1: Escopo da negociação -->
@@ -681,7 +681,7 @@ function confirmPayment() {
         </div>
 
         <!-- Acordo já ativo -->
-        <div v-else-if="contract?.acordoAtivo" class="card text-center py-8">
+        <div v-else-if="acordoVivo" class="card text-center py-8">
           <p class="text-gray-500">Este contrato já possui um acordo ativo.</p>
         </div>
 
