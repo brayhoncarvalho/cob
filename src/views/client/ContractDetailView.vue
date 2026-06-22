@@ -9,7 +9,12 @@ import { useFlow } from '@/stores/flow.js'
 const route  = useRoute()
 const router = useRouter()
 const { formatMoney, formatDate } = useFormatters()
-const { state: flowState } = useFlow()
+const { state: flowState, clientCancelNegotiation } = useFlow()
+
+function cancelarAcordo() {
+  if (!acordoAtivo.value) return
+  clientCancelNegotiation(acordoAtivo.value.id)
+}
 
 const contract = computed(() => flowState.contracts.find(c => c.id === route.params.id))
 const acordoAtivo = computed(() => {
@@ -209,8 +214,55 @@ const parcelasEmAberto = computed(() =>
           </Transition>
         </div>
 
-        <!-- Acordo ativo -->
-        <div v-if="acordoAtivo" class="alert-info mt-4">
+        <!-- Acordo em análise na mesa de crédito -->
+        <div v-if="acordoAtivo && acordoAtivo.status === 'em_analise'" class="mt-4 rounded-xl bg-amber-50 border border-amber-400/30 px-4 py-3 flex items-start gap-3">
+          <svg class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <div class="flex-1">
+            <p class="font-semibold text-amber-800 text-sm">Proposta em análise</p>
+            <p class="text-xs text-amber-700 mt-0.5">Aguardando aprovação da mesa de crédito.</p>
+            <p class="text-xs text-amber-500 mt-0.5 font-mono">{{ acordoAtivo.id }}</p>
+          </div>
+        </div>
+
+        <!-- Acordo aprovado — aguardando pagamento da entrada -->
+        <div v-else-if="acordoAtivo && acordoAtivo.status === 'em_pagamento' && !acordoAtivo.entradaPaga" class="mt-4 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 px-5 py-4 text-white shadow-lg">
+          <div class="flex items-center gap-2 mb-3">
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <p class="font-bold text-base">Acordo aprovado!</p>
+          </div>
+          <p class="text-xs text-teal-100 mb-3">Sua proposta foi aprovada. Pague a entrada para ativar o acordo.</p>
+          <div class="space-y-1 text-xs mb-4">
+            <div class="flex justify-between">
+              <span class="text-teal-200">Entrada</span>
+              <span class="font-bold">{{ formatMoney(acordoAtivo.entrada) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-teal-200">Parcelas</span>
+              <span class="font-medium">{{ acordoAtivo.numParcelas }}x de {{ formatMoney(acordoAtivo.valorParcela) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-teal-200">Protocolo</span>
+              <span class="font-mono text-teal-100">{{ acordoAtivo.id }}</span>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <RouterLink
+              :to="`/contratos/${contract.id}/pagar`"
+              class="block w-full text-center bg-white text-teal-700 font-bold text-sm rounded-xl py-2.5 hover:bg-teal-50 transition-colors"
+            >
+              Pagar entrada agora
+            </RouterLink>
+            <button
+              @click="cancelarAcordo"
+              class="block w-full text-center text-xs text-teal-200 hover:text-white py-1.5 transition-colors"
+            >
+              Cancelar acordo
+            </button>
+          </div>
+        </div>
+
+        <!-- Acordo ativo — entrada já paga -->
+        <div v-else-if="acordoAtivo" class="alert-info mt-4">
           <p class="font-semibold text-sm">Acordo ativo: {{ acordoAtivo.id }}</p>
           <p class="text-xs mt-0.5">
             {{ acordoAtivo.numParcelas }}x de {{ formatMoney(acordoAtivo.valorParcela) }} via boleto/Pix
