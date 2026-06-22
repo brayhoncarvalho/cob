@@ -231,7 +231,7 @@ function confirmPayment() {
       <div class="max-w-lg mx-auto">
 
         <!-- Proposta enviada para Mesa de Crédito -->
-        <template v-else-if="propostaPendente.status === 'em_analise'">
+        <template v-if="propostaPendente.status === 'em_analise'">
           <div class="card text-center py-10 mb-5">
             <div class="w-14 h-14 mx-auto mb-4 bg-amber-50 rounded-full flex items-center justify-center">
               <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -275,7 +275,8 @@ function confirmPayment() {
 
         <!-- Acordo ativo (em_pagamento): pagamento confirmado -->
         <template v-else-if="paymentConfirmed">
-          <div class="card text-center py-10 mb-5"> fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <div class="card text-center py-10 mb-5">
+            <svg class="w-14 h-14 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             <h2 class="text-xl font-bold text-green-700 mb-2">Pagamento Confirmado!</h2>
             <p class="text-sm text-gray-500">Acordo ativado e entrada paga com sucesso.</p>
             <p class="text-xs font-mono font-semibold text-gray-700 mt-3">Protocolo: {{ propostaPendente.id }}</p>
