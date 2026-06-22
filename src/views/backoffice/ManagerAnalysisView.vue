@@ -8,7 +8,7 @@ import { useRules } from '@/stores/rules.js'
 
 const route  = useRoute()
 const router = useRouter()
-const { formatMoney, formatDateTime } = useFormatters()
+const { formatMoney, formatDate, formatDateTime } = useFormatters()
 const { state: flowState, approveNegotiation, rejectNegotiation, counterNegotiation } = useFlow()
 const { rules } = useRules()
 
@@ -46,6 +46,25 @@ const analise = computed(() => {
   ]
 })
 
+// Acordo ativo (leitura)
+const isAcordoView = computed(() => ['em_pagamento', 'quitado'].includes(neg.value?.status))
+const parcelasPagas  = computed(() => neg.value?.parcelas?.filter(p => p.status === 'paga').length ?? 0)
+const parcelasTotal  = computed(() => neg.value?.parcelas?.length ?? 0)
+const progressoPct   = computed(() => parcelasTotal.value > 0 ? Math.round((parcelasPagas.value / parcelasTotal.value) * 100) : 0)
+
+const parcelaBadge = (status) => {
+  if (status === 'paga')    return 'bg-green-100 text-green-700'
+  if (status === 'vencida') return 'bg-red-100 text-red-700'
+  if (status === 'proxima') return 'bg-blue-100 text-blue-700'
+  return 'bg-gray-100 text-gray-500'
+}
+const parcelaLabel = (status) => {
+  if (status === 'paga')    return 'Paga'
+  if (status === 'vencida') return 'Vencida'
+  if (status === 'proxima') return 'Próxima'
+  return 'Futura'
+}
+
 async function confirmar() {
   if (!decisao.value) return
   loading.value = true
@@ -77,6 +96,143 @@ async function confirmar() {
     back-label="Gestão de Crédito"
   >
     <div v-if="!neg" class="bg-white rounded-xl p-8 text-center text-gray-500">Proposta não encontrada.</div>
+
+    <!-- VIEW ACORDO ATIVO / QUITADO ─────────────────────────────── -->
+    <template v-else-if="isAcordoView">
+      <div class="grid xl:grid-cols-3 gap-6">
+        <div class="xl:col-span-2 space-y-4">
+
+          <!-- Cabeçalho do acordo -->
+          <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-semibold text-gray-900">Acompanhamento do Acordo</h3>
+                <p class="text-xs text-gray-400 mt-0.5">Protocolo {{ neg.id }} · Contrato #{{ neg.contratoId }}</p>
+              </div>
+              <span :class="neg.status === 'quitado' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'"
+                    class="text-xs font-semibold px-3 py-1 rounded-full">
+                {{ neg.status === 'quitado' ? 'Quitado' : 'Em Pagamento' }}
+              </span>
+            </div>
+
+            <!-- Progresso -->
+            <div class="mb-4">
+              <div class="flex justify-between text-xs text-gray-500 mb-1">
+                <span>{{ parcelasPagas }} de {{ parcelasTotal }} parcelas pagas</span>
+                <span class="font-semibold">{{ progressoPct }}%</span>
+              </div>
+              <div class="w-full bg-gray-100 rounded-full h-2.5">
+                <div
+                  class="h-2.5 rounded-full transition-all duration-500"
+                  :class="neg.status === 'quitado' ? 'bg-green-500' : 'bg-blue-500'"
+                  :style="{ width: progressoPct + '%' }"
+                />
+              </div>
+            </div>
+
+            <!-- Resumo financeiro -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              <div>
+                <p class="text-xs text-gray-400">Entrada</p>
+                <p class="font-bold text-blue-700">{{ formatMoney(neg.entrada) }}</p>
+                <p class="text-xs text-gray-400">{{ neg.entradaPaga ? '✓ paga' : 'pendente' }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400">Parcelas</p>
+                <p class="font-bold">{{ neg.numParcelas }}x {{ formatMoney(neg.valorParcela) }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400">Total do acordo</p>
+                <p class="font-bold">{{ formatMoney(neg.totalAcordo) }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400">Desconto</p>
+                <p class="font-bold text-green-600">{{ formatMoney(neg.desconto) }}</p>
+                <p class="text-xs text-gray-400">{{ ((neg.desconto / neg.totalDivida) * 100).toFixed(1) }}%</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabela de parcelas -->
+          <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 class="font-semibold text-gray-900 mb-3">Parcelas do Acordo</h3>
+            <div v-if="neg.parcelas?.length" class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="border-b border-gray-100 text-xs text-gray-400 text-left">
+                    <th class="pb-2 pr-3 font-medium">#</th>
+                    <th class="pb-2 pr-3 font-medium">Vencimento</th>
+                    <th class="pb-2 pr-3 font-medium">Valor</th>
+                    <th class="pb-2 pr-3 font-medium">Status</th>
+                    <th class="pb-2 font-medium">Pagamento</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="parcela in neg.parcelas" :key="parcela.numero"
+                      class="border-b border-gray-50 last:border-0">
+                    <td class="py-2 pr-3 font-mono text-gray-500">
+                      {{ parcela.tipo === 'entrada' ? 'E' : parcela.numero }}
+                    </td>
+                    <td class="py-2 pr-3">{{ formatDate(parcela.vencimento) }}</td>
+                    <td class="py-2 pr-3 font-semibold">{{ formatMoney(parcela.valor) }}</td>
+                    <td class="py-2 pr-3">
+                      <span :class="parcelaBadge(parcela.status)"
+                            class="text-xs font-medium px-2 py-0.5 rounded-full">
+                        {{ parcelaLabel(parcela.status) }}
+                      </span>
+                    </td>
+                    <td class="py-2 text-gray-400 text-xs">
+                      {{ parcela.dataPagamento ? formatDate(parcela.dataPagamento) : '—' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p v-else class="text-sm text-gray-400 text-center py-4">Parcelas ainda não geradas.</p>
+          </div>
+        </div>
+
+        <!-- Coluna lateral: dados do contrato -->
+        <div class="space-y-4">
+          <div v-if="neg.status === 'quitado'" class="bg-green-50 border border-green-500/20 rounded-xl p-5 text-center">
+            <svg class="w-10 h-10 text-green-500 mx-auto mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <p class="font-semibold text-green-700 text-sm">Acordo Quitado</p>
+            <p class="text-xs text-green-600 mt-1">Todas as parcelas foram pagas com sucesso.</p>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 class="font-semibold text-gray-900 mb-3">Dados do Contrato</h3>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between"><span class="text-gray-400">Contrato</span><span class="font-medium">#{{ contract?.id }}</span></div>
+              <div class="flex justify-between"><span class="text-gray-400">Tipo</span><span class="font-medium">{{ contract?.tipo }}</span></div>
+              <div class="flex justify-between"><span class="text-gray-400">Saldo devedor</span><span class="font-semibold">{{ formatMoney(contract?.saldoDevedor) }}</span></div>
+              <div class="flex justify-between"><span class="text-gray-400">Parcelas pagas</span><span class="font-medium text-green-600">{{ contract?.parcelasPagas }}/{{ contract?.totalParcelas }}</span></div>
+              <div class="flex justify-between"><span class="text-gray-400">Aprovado em</span><span class="font-medium">{{ neg.dataAprovacao ? formatDate(neg.dataAprovacao) : '—' }}</span></div>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 class="font-semibold text-gray-900 mb-3">Indicadores</h3>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-400">Entrada (%)</span>
+                <span :class="(neg.entrada / (neg.totalDivida || 1)) >= 0.20 ? 'text-green-600' : 'text-amber-600'" class="font-semibold">
+                  {{ ((neg.entrada / (neg.totalDivida || 1)) * 100).toFixed(1) }}%
+                </span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">Parcelamento</span>
+                <span :class="neg.numParcelas <= 18 ? 'text-green-600' : 'text-amber-600'" class="font-semibold">
+                  {{ neg.numParcelas }}x
+                </span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">Desconto dado</span>
+                <span class="font-semibold text-blue-700">{{ formatMoney(neg.desconto) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
 
     <div v-else-if="done" class="max-w-lg mx-auto text-center">
       <div class="bg-white rounded-2xl border border-gray-200 p-8">

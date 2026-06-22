@@ -61,6 +61,19 @@ const resolvidasHoje   = computed(() =>
 function goAnalise(id) {
   router.push(`/backoffice/proposta/${id}`)
 }
+
+// Acordos ativos para monitoramento (1º Nível)
+const acordosAtivos = computed(() =>
+  flowState.negotiations
+    .filter(n => n.status === 'em_pagamento' || n.status === 'quitado')
+    .map(n => ({
+      ...n,
+      contrato: flowState.contracts.find(c => c.id === n.contratoId),
+      parcelasPagas: n.parcelas?.filter(p => p.status === 'paga').length ?? 0,
+      parcelasTotal: n.parcelas?.length ?? 0,
+    }))
+    .sort((a, b) => (a.status === 'quitado' ? 1 : -1))
+)
 </script>
 
 <template>
@@ -165,22 +178,57 @@ function goAnalise(id) {
       </div>
     </div>
 
-    <!-- Propostas resolvidas (histórico) -->
-    <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden mt-6">
-      <div class="px-6 py-4 border-b border-gray-100">
-        <h2 class="font-semibold text-gray-900">Resolvidas recentemente</h2>
+    <!-- Acordos em andamento -->
+    <div v-if="acordosAtivos.length > 0" class="bg-white rounded-2xl border border-gray-200 overflow-hidden mt-6">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h2 class="font-semibold text-gray-900">Acordos em andamento</h2>
+        <span class="text-xs bg-blue-50 text-blue-600 font-semibold px-2.5 py-1 rounded-full">{{ acordosAtivos.filter(a => a.status === 'em_pagamento').length }} ativos</span>
       </div>
-      <div class="divide-y divide-gray-50">
-        <div class="px-6 py-3 flex items-center justify-between text-sm">
-          <div>
-            <span class="font-mono text-gray-700">NEG-2026-4300</span>
-            <span class="ml-2 text-gray-500">Contrato #9012</span>
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="text-gray-500">{{ formatMoney(3000) }} + 6x</span>
-            <StatusBadge status="aprovada" small />
-          </div>
-        </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm min-w-[600px]">
+          <thead class="bg-gray-50">
+            <tr class="text-xs text-gray-500">
+              <th class="text-left px-6 py-3 font-medium">Protocolo</th>
+              <th class="text-left px-4 py-3 font-medium">Contrato</th>
+              <th class="text-right px-4 py-3 font-medium">Total do acordo</th>
+              <th class="text-center px-4 py-3 font-medium">Progresso</th>
+              <th class="text-left px-4 py-3 font-medium">Status</th>
+              <th class="text-right px-6 py-3 font-medium">Ação</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            <tr
+              v-for="item in acordosAtivos"
+              :key="item.id"
+              class="hover:bg-gray-50 cursor-pointer"
+              @click="goAnalise(item.id)"
+            >
+              <td class="px-6 py-3 font-mono text-sm text-gray-900">{{ item.id }}</td>
+              <td class="px-4 py-3 font-mono text-gray-700">#{{ item.contratoId }}</td>
+              <td class="px-4 py-3 text-right font-semibold">{{ formatMoney(item.totalAcordo) }}</td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <div class="flex-1 bg-gray-100 rounded-full h-2 min-w-[80px]">
+                    <div
+                      class="h-2 rounded-full"
+                      :class="item.status === 'quitado' ? 'bg-green-500' : 'bg-blue-500'"
+                      :style="{ width: item.parcelasTotal > 0 ? Math.round((item.parcelasPagas / item.parcelasTotal) * 100) + '%' : '0%' }"
+                    />
+                  </div>
+                  <span class="text-xs text-gray-500 whitespace-nowrap">{{ item.parcelasPagas }}/{{ item.parcelasTotal }}</span>
+                </div>
+              </td>
+              <td class="px-4 py-3">
+                <span :class="item.status === 'quitado' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'" class="text-xs font-semibold px-2 py-0.5 rounded-full">
+                  {{ item.status === 'quitado' ? 'Quitado' : 'Em pagamento' }}
+                </span>
+              </td>
+              <td class="px-6 py-3 text-right">
+                <button @click.stop="goAnalise(item.id)" class="text-sm font-semibold text-blue-600 hover:text-blue-800">Ver acordo →</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
