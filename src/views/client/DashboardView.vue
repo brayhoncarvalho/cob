@@ -15,10 +15,18 @@ const { state: flowState } = useFlow()
 const contracts    = flowState.contracts
 const negotiations = flowState.negotiations
 
-const totalVencidas     = computed(() => contracts.reduce((s, c) => s + c.parcelasVencidas, 0))
+// Contratos que já possuem acordo ativo — dívida renegociada, não devem aparecer como "em atraso"
+const contratosComAcordoAtivo = computed(() =>
+  new Set(negotiations.filter(n => n.status === 'em_pagamento').map(n => n.contratoId))
+)
+const contractsSemAcordo = computed(() =>
+  contracts.filter(c => !contratosComAcordoAtivo.value.has(c.id))
+)
+
+const totalVencidas     = computed(() => contractsSemAcordo.value.reduce((s, c) => s + c.parcelasVencidas, 0))
 // totalEmAberto = soma real das parcelas vencidas (não o saldo devedor total)
 const totalEmAberto     = computed(() =>
-  contracts.flatMap(c => c.parcelas.filter(p => p.status === 'vencida'))
+  contractsSemAcordo.value.flatMap(c => c.parcelas.filter(p => p.status === 'vencida'))
            .reduce((s, p) => s + p.valorAtualizado, 0)
 )
 const contratosAtivos   = computed(() => contracts.filter(c => c.status !== 'cancelado').length)
@@ -26,7 +34,7 @@ const saldoTotal        = computed(() => contracts.reduce((s, c) => s + c.saldoD
 const acordosAtivos     = computed(() => negotiations.filter(n => n.status === 'em_pagamento').length)
 const negsPendentes     = computed(() => negotiations.filter(n => n.status === 'em_analise').length)
 const primeiroContratoEmAtraso = computed(() =>
-  contracts.find(c => c.parcelasVencidas > 0 || c.status === 'em_atraso') ?? null
+  contractsSemAcordo.value.find(c => c.parcelasVencidas > 0 || c.status === 'em_atraso') ?? null
 )
 const proximoVencimento = computed(() => {
   const all = contracts.flatMap(c =>
