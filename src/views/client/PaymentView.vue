@@ -12,7 +12,16 @@ const { state: flowState, payContractParcelas } = useFlow()
 
 const contract = computed(() => flowState.contracts.find(c => c.id === route.params.id))
 
-// Parcelas a pagar: se query tem ?parcelas=9,10 usa essas; senão pega todas vencidas
+// Acordo ativo em pagamento para este contrato
+const acordoAtivo = computed(() =>
+  flowState.negotiations.find(n =>
+    n.contratoId === route.params.id && n.status === 'em_pagamento' && !n.entradaPaga
+  ) ?? null
+)
+
+// Parcelas a pagar: se query tem ?parcelas=9,10 usa essas;
+// se há acordo ativo sem entrada paga, usa a parcela de entrada do acordo;
+// senão pega parcelas vencidas + próxima do contrato
 const parcelasSelecionadas = computed(() => {
   if (!contract.value) return []
   const q = route.query.parcelas
@@ -20,7 +29,14 @@ const parcelasSelecionadas = computed(() => {
     const nums = String(q).split(',').map(Number)
     return contract.value.parcelas.filter(p => nums.includes(p.numero))
   }
-  // Sem query: pega parcelas vencidas + próxima
+  // Acordo ativo: pagar apenas a entrada do acordo
+  if (acordoAtivo.value) {
+    const entradaParc = acordoAtivo.value.parcelas?.[0]
+    if (entradaParc) return [{ ...entradaParc, numero: 0, _acordo: true }]
+    // fallback se parcelas do acordo não foram geradas
+    return [{ numero: 0, valor: acordoAtivo.value.entrada, valorAtualizado: acordoAtivo.value.entrada, juros: 0, multa: 0, _acordo: true }]
+  }
+  // Sem acordo: parcelas vencidas + próxima do contrato
   return contract.value.parcelas.filter(p => p.status === 'vencida' || p.status === 'proxima')
 })
 
@@ -70,9 +86,14 @@ function copyPix() {
 }
 
 function simulatePayment() {
-  // Mark parcelas as paid in the store
-  const nums = parcelasSelecionadas.value.map(p => p.numero)
-  payContractParcelas(route.params.id, nums)
+  if (acordoAtivo.value) {
+    // Pagamento da entrada do acordo — usa payContractParcelas com a parcela 0 do contrato
+    // (o store seta entradaPaga automaticamente)
+    payContractParcelas(route.params.id, [])
+  } else {
+    const nums = parcelasSelecionadas.value.map(p => p.numero)
+    payContractParcelas(route.params.id, nums)
+  }
   paymentState.value = 'confirmed'
 }
 
@@ -128,7 +149,11 @@ function generateNew() {
                 <span class="text-gray-500">Contrato</span>
                 <span class="font-medium">#{{ contract.id }}</span>
               </div>
-              <div class="flex justify-between">
+              <div v-if="acordoAtivo" class="flex justify-between">
+                <span class="text-gray-500">Referente a</span>
+                <span class="font-medium">Entrada do acordo</span>
+              </div>
+              <div v-else class="flex justify-between">
                 <span class="text-gray-500">Parcela(s)</span>
                 <span class="font-medium">{{ parcelasSelecionadas.map(p => p.numero).join(', ') }}</span>
               </div>
