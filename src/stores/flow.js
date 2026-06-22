@@ -238,7 +238,14 @@ function payContractParcelas(contratoId, parcelaNumeros) {
   const negAtiva = state.negotiations.find(n =>
     n.contratoId === contratoId && n.status === 'em_pagamento'
   )
-  if (negAtiva) negAtiva.entradaPaga = true
+  if (negAtiva) {
+    negAtiva.entradaPaga = true
+    // Marcar a parcela de entrada (índice 0) como paga no acordo
+    if (negAtiva.parcelas?.length > 0 && negAtiva.parcelas[0].status !== 'paga') {
+      negAtiva.parcelas[0].status = 'paga'
+      negAtiva.parcelas[0].dataPagamento = new Date().toISOString()
+    }
+  }
   // Recalcular métricas do contrato
   const vencidas = c.parcelas.filter(p => p.status === 'vencida')
   c.parcelasVencidas = vencidas.length
