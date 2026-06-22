@@ -229,9 +229,10 @@ function simular() {
 
 function confirmPayment() {
   // Mark entrada (first parcela, index 0) as paid
-  const neg = flowState.negotiations.find(n => n.id === submittedId.value)
+  const negId = submittedId.value || propostaPendente.value?.id
+  const neg = flowState.negotiations.find(n => n.id === negId)
   if (neg?.parcelas?.length) {
-    markParcelaPaid(submittedId.value, 0)
+    markParcelaPaid(negId, 0)
   }
   paymentConfirmed.value = true
   showPayment.value = false
@@ -448,10 +449,18 @@ function confirmPayment() {
           </div>
 
           <div class="space-y-3">
-            <button @click="showPayment = true" class="btn-success w-full flex items-center justify-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
-              Registrar pagamento da entrada
-            </button>
+            <template v-if="!propostaPendente.entradaPaga">
+              <button @click="showPayment = true" class="btn-success w-full flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
+                Registrar pagamento da entrada
+              </button>
+            </template>
+            <template v-else>
+              <div class="flex items-center justify-center gap-2 py-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm font-semibold">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Entrada paga — acordo em andamento
+              </div>
+            </template>
             <button @click="cancelarProposta" class="btn-danger w-full">Cancelar acordo</button>
             <RouterLink to="/atendimento" class="btn-secondary w-full block text-center">Voltar ao painel</RouterLink>
           </div>

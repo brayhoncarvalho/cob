@@ -202,6 +202,8 @@ function markParcelaPaid(negId, parcelaIdx) {
   const neg = state.negotiations.find(n => n.id === negId)
   if (!neg?.parcelas) return
   neg.parcelas[parcelaIdx].status = 'paga'
+  // Seta entradaPaga quando a parcela de índice 0 (entrada) é paga
+  if (parcelaIdx === 0) neg.entradaPaga = true
   // Promove próxima futura para proxima
   const next = neg.parcelas.find((p, i) => i > parcelaIdx && p.status === 'futura')
   if (next) next.status = 'proxima'
