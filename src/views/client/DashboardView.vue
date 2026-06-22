@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
-import StatusBadge from '@/components/StatusBadge.vue'
 import { useAuth } from '@/stores/auth.js'
 import { useFormatters } from '@/composables/useFormatters.js'
 import { useFlow } from '@/stores/flow.js'
@@ -15,87 +14,114 @@ const { state: flowState } = useFlow()
 const contracts    = flowState.contracts
 const negotiations = flowState.negotiations
 
-const totalVencidas     = computed(() => contracts.reduce((s, c) => s + c.parcelasVencidas, 0))
-// totalEmAberto = soma real das parcelas vencidas (não o saldo devedor total)
-const totalEmAberto     = computed(() =>
-  contracts.flatMap(c => c.parcelas.filter(p => p.status === 'vencida'))
-           .reduce((s, p) => s + p.valorAtualizado, 0)
-)
-const contratosAtivos   = computed(() => contracts.filter(c => c.status !== 'cancelado').length)
-const saldoTotal        = computed(() => contracts.reduce((s, c) => s + c.saldoDevedor, 0))
-const acordosAtivos     = computed(() => negotiations.filter(n => n.status === 'em_pagamento').length)
-const negsPendentes     = computed(() => negotiations.filter(n => n.status === 'em_analise').length)
-const primeiroContratoEmAtraso = computed(() =>
-  contracts.find(c => c.parcelasVencidas > 0 || c.status === 'em_atraso') ?? null
-)
-const proximoVencimento = computed(() => {
-  const all = contracts.flatMap(c =>
-    c.parcelas
-      .filter(p => p.status === 'proxima' || (p.status === 'futura' && !c.parcelasVencidas))
-      .map(p => ({ ...p, contratoId: c.id }))
-  ).sort((a, b) => a.vencimento.localeCompare(b.vencimento))
-  return all[0] ?? null
-})
+const contratosAtivos = computed(() => contracts.filter(c => c.status !== 'cancelado').length)
+const acordosAtivos   = computed(() => negotiations.filter(n => n.status === 'em_pagamento').length)
 
-const notificacoes = computed(() => {
+// Contratos que têm acordo ativo (em_pagamento) — parcelas suspensas
+const contratoComAcordo = computed(() =>
+  new Set(negotiations.filter(n => n.status === 'em_pagamento').map(n => n.contratoId))
+)
+
+// ── Listas unificadas de pagamentos ──────────────────────────────────────────
+
+// Em atraso: vencidas de contratos sem acordo ativo + vencidas de acordo em andamento
+const parcelasEmAtraso = computed(() => {
   const items = []
-  // Notif de vencidas suprimida quando totalVencidas > 0 — o banner de atraso vermelho já cobre isso (evita triplicação de alertas)
-  const agora = new Date()
-  negotiations.filter(n => n.status === 'em_analise').forEach(n => {
-    const expirado = n.prazoResposta && new Date(n.prazoResposta) < agora
-    items.push({
-      type: 'warning',
-      text: expirado
-        ? `Proposta ${n.id} em análise. Prazo encerrado em ${formatDate(n.prazoResposta)}.`
-        : `Proposta ${n.id} em análise. Prazo até ${formatDate(n.prazoResposta)}.`,
-      expired: expirado,
-      action: `/negociacoes/${n.id}`
+  contracts.forEach(c => {
+    if (contratoComAcordo.value.has(c.id)) return
+    c.parcelas.filter(p => p.status === 'vencida').forEach(p => {
+      items.push({
+        sourceType: 'contrato',
+        sourceLabel: `Contrato #${c.id}`,
+        parcelaNum: p.numero,
+        tipo: 'parcela',
+        vencimento: p.vencimento,
+        valor: p.valorAtualizado ?? p.valor,
+        payRoute: `/contratos/${c.id}/pagar?parcelas=${p.numero}`,
+        detailRoute: `/contratos/${c.id}`,
+      })
     })
   })
-  negotiations.filter(n => n.status === 'em_pagamento' && !n.entradaPaga).forEach(n =>
-    items.push({ type: 'success', text: `Acordo ${n.id} aprovado! Pague a entrada para ativar.`, action: `/negociacoes/${n.id}` })
-  )
-  return items.slice(0, 3)
+  negotiations.filter(n => n.status === 'em_pagamento' && n.entradaPaga).forEach(n => {
+    n.parcelas?.filter(p => p.status === 'vencida').forEach(p => {
+      items.push({
+        sourceType: 'acordo',
+        sourceLabel: `Acordo ${n.id}`,
+        parcelaNum: p.numero,
+        tipo: p.tipo ?? 'parcela',
+        vencimento: p.vencimento,
+        valor: p.valor,
+        payRoute: `/negociacoes/${n.id}?pagar=1`,
+        detailRoute: `/negociacoes/${n.id}`,
+      })
+    })
+  })
+  return items.sort((a, b) => a.vencimento.localeCompare(b.vencimento))
 })
 
-// Propostas do atendente aguardando aprovação do cliente
+// Próximos vencimentos: proxima + futura de contratos sem acordo + de acordos ativos (limite 6)
+const proximosVencimentos = computed(() => {
+  const items = []
+  contracts.forEach(c => {
+    if (contratoComAcordo.value.has(c.id)) return
+    c.parcelas.filter(p => p.status === 'proxima' || p.status === 'futura').forEach(p => {
+      items.push({
+        sourceType: 'contrato',
+        sourceLabel: `Contrato #${c.id}`,
+        parcelaNum: p.numero,
+        tipo: 'parcela',
+        vencimento: p.vencimento,
+        valor: p.valor,
+        payRoute: `/contratos/${c.id}/pagar?parcelas=${p.numero}`,
+        detailRoute: `/contratos/${c.id}`,
+      })
+    })
+  })
+  negotiations.filter(n => n.status === 'em_pagamento' && n.entradaPaga).forEach(n => {
+    n.parcelas?.filter(p => p.status === 'proxima' || p.status === 'futura').forEach(p => {
+      items.push({
+        sourceType: 'acordo',
+        sourceLabel: `Acordo ${n.id}`,
+        parcelaNum: p.numero,
+        tipo: p.tipo ?? 'parcela',
+        vencimento: p.vencimento,
+        valor: p.valor,
+        payRoute: `/negociacoes/${n.id}?pagar=1`,
+        detailRoute: `/negociacoes/${n.id}`,
+      })
+    })
+  })
+  return items.sort((a, b) => a.vencimento.localeCompare(b.vencimento)).slice(0, 6)
+})
+
+const totalVencidas = computed(() => parcelasEmAtraso.value.length)
+const totalEmAberto = computed(() => parcelasEmAtraso.value.reduce((s, p) => s + p.valor, 0))
+const proximoGeral  = computed(() => proximosVencimentos.value[0] ?? null)
+
+// Banners de ação
 const propostasAtendente = computed(() =>
   negotiations.filter(n => n.status === 'pending_client_approval')
 )
-
-// Acordos aprovados pela mesa aguardando pagamento da entrada
 const acordosAguardandoPagamento = computed(() =>
   negotiations.filter(n => n.status === 'em_pagamento' && !n.entradaPaga)
 )
-
-// Contrapropostas da mesa aguardando resposta do cliente
 const contrapropostasPendentes = computed(() =>
   negotiations.filter(n => n.status === 'contraproposta')
 )
 
 function goToAtrasos() {
-  if (primeiroContratoEmAtraso.value?.id) {
-    router.push(`/contratos/${primeiroContratoEmAtraso.value.id}`)
+  if (parcelasEmAtraso.value.length > 0) {
+    router.push(parcelasEmAtraso.value[0].detailRoute)
     return
   }
   router.push('/contratos')
 }
-
-function goToContratos() {
-  router.push('/contratos')
-}
-
+function goToContratos()  { router.push('/contratos') }
 function goToProximoVencimento() {
-  if (proximoVencimento.value?.contratoId) {
-    router.push(`/contratos/${proximoVencimento.value.contratoId}`)
-    return
-  }
+  if (proximoGeral.value) { router.push(proximoGeral.value.detailRoute); return }
   router.push('/contratos')
 }
-
-function goToNegociacoes() {
-  router.push('/negociacoes')
-}
+function goToNegociacoes() { router.push('/negociacoes') }
 </script>
 
 <template>
@@ -196,7 +222,7 @@ function goToNegociacoes() {
         <p class="text-sm mt-0.5">Total em atraso: <strong>{{ formatMoney(totalEmAberto) }}</strong> — juros continuam acumulando.</p>
       </div>
       <div class="flex gap-2 shrink-0">
-        <RouterLink :to="primeiroContratoEmAtraso ? `/contratos/${primeiroContratoEmAtraso.id}` : '/contratos'" class="btn-danger text-sm py-2 px-4">Pagar Agora</RouterLink>
+        <RouterLink :to="parcelasEmAtraso[0]?.payRoute ?? '/contratos'" class="btn-danger text-sm py-2 px-4">Pagar Agora</RouterLink>
       </div>
     </div>
 
@@ -250,18 +276,18 @@ function goToNegociacoes() {
       <!-- Próximo vencimento -->
       <button
         type="button"
-        :aria-label="proximoVencimento ? `Ver contrato do próximo vencimento em ${formatDate(proximoVencimento.vencimento)}` : 'Ver contratos'"
+        :aria-label="proximoGeral ? `Ver próximo vencimento em ${formatDate(proximoGeral.vencimento)}` : 'Ver contratos'"
         class="card w-full text-left min-h-[44px] hover:shadow-md hover:border-blue-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 transition-all"
         @click="goToProximoVencimento"
       >
         <p class="section-title text-xs">Próximo vencimento</p>
-        <template v-if="proximoVencimento">
-          <p class="text-lg font-bold text-gray-900 mt-1">{{ formatDate(proximoVencimento.vencimento) }}</p>
-          <p class="text-xs text-gray-500 mt-1">{{ formatMoney(proximoVencimento.valor) }}</p>
+        <template v-if="proximoGeral">
+          <p class="text-lg font-bold text-gray-900 mt-1">{{ formatDate(proximoGeral.vencimento) }}</p>
+          <p class="text-xs text-gray-500 mt-1">{{ formatMoney(proximoGeral.valor) }}</p>
         </template>
         <p v-else class="text-sm text-gray-400 mt-1">—</p>
         <div class="mt-3 flex items-center justify-between text-xs font-medium text-blue-600">
-          <span>{{ proximoVencimento ? 'Ver contrato' : 'Ver contratos' }}</span>
+          <span>{{ proximoGeral ? 'Ver detalhe' : 'Ver contratos' }}</span>
           <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
           </svg>
@@ -286,79 +312,99 @@ function goToNegociacoes() {
       </button>
     </div>
 
-    <!-- Contratos resumo -->
-    <div class="card mb-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="font-semibold text-gray-900">Seus contratos</h2>
-        <RouterLink to="/contratos" class="text-sm text-blue-600 hover:underline font-medium">Ver todos →</RouterLink>
+    <!-- ── Seção: Pagamentos em atraso ────────────────────────────────── -->
+    <div v-if="parcelasEmAtraso.length > 0" class="mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold text-gray-900 flex items-center gap-2">
+          <span class="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
+            <svg class="w-3 h-3 text-red-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
+          </span>
+          Em atraso
+          <span class="text-xs font-normal bg-red-100 text-red-700 px-2 py-0.5 rounded-full">{{ parcelasEmAtraso.length }}</span>
+        </h2>
+        <span class="text-sm font-semibold text-red-700">{{ formatMoney(totalEmAberto) }}</span>
       </div>
-      <div class="space-y-2">
+
+      <div class="card divide-y divide-gray-50 p-0 overflow-hidden">
         <div
-          v-for="c in contracts"
-          :key="c.id"
-          class="flex items-center justify-between p-3 rounded-xl border transition-colors cursor-pointer"
-          :class="c.status === 'quitado'
-            ? 'border-gray-100 bg-gray-50/60 opacity-60 hover:opacity-90'
-            : 'border-gray-100 hover:border-blue-200 hover:bg-blue-50'"
-          @click="router.push(`/contratos/${c.id}`)"
+          v-for="item in parcelasEmAtraso"
+          :key="`${item.sourceType}-${item.sourceLabel}-${item.parcelaNum}`"
+          class="flex items-center justify-between gap-3 px-5 py-3.5"
         >
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="font-semibold text-sm" :class="c.status === 'quitado' ? 'text-gray-500' : 'text-gray-900'">#{{ c.id }}</span>
-              <span class="text-xs text-gray-400">{{ c.tipo }}</span>
-              <StatusBadge :status="c.status" small />
+          <div class="flex items-center gap-3 min-w-0">
+            <!-- Badge de origem -->
+            <span
+              class="shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+              :class="item.sourceType === 'acordo' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'"
+            >
+              {{ item.sourceType === 'acordo' ? 'Acordo' : 'Contrato' }}
+            </span>
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-gray-800 truncate">Parcela {{ item.parcelaNum }} · {{ item.sourceLabel }}</p>
+              <p class="text-xs text-red-600 mt-0.5">Venceu em {{ formatDate(item.vencimento) }}</p>
             </div>
-            <p class="text-xs text-gray-400 mt-0.5">
-              {{ c.parcelasPagas }}/{{ c.totalParcelas }} pagas
-              <template v-if="c.status !== 'quitado'"> · Saldo: {{ formatMoney(c.saldoDevedor) }}</template>
-            </p>
           </div>
-          <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-          </svg>
+          <div class="flex items-center gap-3 shrink-0">
+            <span class="text-sm font-bold text-gray-900">{{ formatMoney(item.valor) }}</span>
+            <RouterLink
+              :to="item.payRoute"
+              class="text-xs font-semibold bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+            >
+              Pagar
+            </RouterLink>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Notificações -->
-    <div v-if="notificacoes.length > 0" class="card">
-      <h2 class="font-semibold text-gray-900 mb-4">Notificações</h2>
-      <div class="space-y-3">
-        <RouterLink
-          v-for="(n, i) in notificacoes"
-          :key="i"
-          :to="n.action"
-          class="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors"
-        >
-          <!-- Ícone por tipo -->
-          <span class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" :class="{
-            'bg-red-100': n.type === 'danger',
-            'bg-amber-100': n.type === 'warning',
-            'bg-green-100': n.type === 'success',
-          }">
-            <!-- danger -->
-            <svg v-if="n.type === 'danger'" class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
-            <!-- warning -->
-            <svg v-else-if="n.type === 'warning'" class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <!-- success -->
-            <svg v-else class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <!-- ── Seção: Próximos vencimentos ────────────────────────────────── -->
+    <div class="mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold text-gray-900 flex items-center gap-2">
+          <span class="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
+            <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
           </span>
-          <div class="flex-1">
-            <p class="text-sm text-gray-700">{{ n.text }}</p>
-            <span
-              v-if="n.expired"
-              class="inline-block mt-1 text-xs font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full"
-            >Prazo expirado</span>
-          </div>
-          <svg class="w-4 h-4 text-gray-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-          </svg>
-        </RouterLink>
+          Próximos vencimentos
+        </h2>
+        <RouterLink to="/contratos" class="text-xs text-blue-600 hover:underline font-medium">Ver todos →</RouterLink>
       </div>
-    </div>
-    <div v-else class="card text-center text-gray-400 py-6">
-      <svg class="w-10 h-10 text-green-400 mx-auto mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      <p class="font-medium text-gray-600">Tudo certo! Suas parcelas estão em dia.</p>
+
+      <!-- Lista de próximos -->
+      <div v-if="proximosVencimentos.length > 0" class="card divide-y divide-gray-50 p-0 overflow-hidden">
+        <div
+          v-for="item in proximosVencimentos"
+          :key="`${item.sourceType}-${item.sourceLabel}-${item.parcelaNum}`"
+          class="flex items-center justify-between gap-3 px-5 py-3.5"
+        >
+          <div class="flex items-center gap-3 min-w-0">
+            <span
+              class="shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+              :class="item.sourceType === 'acordo' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'"
+            >
+              {{ item.sourceType === 'acordo' ? 'Acordo' : 'Contrato' }}
+            </span>
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-gray-800 truncate">Parcela {{ item.parcelaNum }} · {{ item.sourceLabel }}</p>
+              <p class="text-xs text-gray-400 mt-0.5">Vence em {{ formatDate(item.vencimento) }}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 shrink-0">
+            <span class="text-sm font-bold text-gray-900">{{ formatMoney(item.valor) }}</span>
+            <RouterLink
+              :to="item.payRoute"
+              class="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+            >
+              Pagar
+            </RouterLink>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado vazio -->
+      <div v-else class="card text-center py-8">
+        <svg class="w-10 h-10 text-green-400 mx-auto mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <p class="font-medium text-gray-600">Tudo em dia! Sem vencimentos próximos.</p>
+      </div>
     </div>
 
     <!-- Espaço para nav mobile -->
