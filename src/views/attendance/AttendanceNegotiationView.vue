@@ -20,7 +20,7 @@ const clienteId = computed(() => route.params.clienteId)
 const propostaPendente = computed(() =>
   flowState.negotiations.find(n =>
     n.clienteCpf === clienteId.value &&
-    ['em_pagamento', 'em_analise'].includes(n.status) &&
+    ['em_pagamento', 'em_analise', 'contraproposta'].includes(n.status) &&
     n.simuladoPorAtendente
   ) ?? null
 )
@@ -239,8 +239,42 @@ function confirmPayment() {
     <template v-if="propostaPendente && !cancelando">
       <div class="max-w-lg mx-auto">
 
+        <!-- Contraproposta recebida da mesa — aguardando aceite do cliente -->
+        <template v-if="propostaPendente.status === 'contraproposta'">
+          <div class="card mb-5">
+            <div class="flex items-center gap-2 mb-3">
+              <svg class="w-6 h-6 text-amber-500 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
+              <h2 class="text-lg font-bold text-amber-700">Contraproposta da Mesa</h2>
+            </div>
+            <p class="text-xs text-gray-500 mb-1">Protocolo: <span class="font-mono font-semibold text-gray-700">{{ propostaPendente.id }}</span></p>
+            <p class="text-sm text-gray-600 mb-4">A mesa enviou novas condições. Apresente ao cliente para aceite ou recusa.</p>
+            <div class="space-y-2 text-sm border-t pt-3">
+              <div class="flex justify-between">
+                <span class="text-gray-500">Contrato</span>
+                <span class="font-medium">#{{ propostaPendente.contratoId }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Nova entrada</span>
+                <span class="font-bold text-amber-700">{{ formatMoney(propostaPendente.contraproposta?.entrada ?? propostaPendente.entrada) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Parcelas</span>
+                <span class="font-medium">{{ propostaPendente.contraproposta?.numParcelas ?? propostaPendente.numParcelas }}x de {{ formatMoney(propostaPendente.contraproposta?.valorParcela ?? propostaPendente.valorParcela) }}</span>
+              </div>
+              <div class="border-t pt-2 flex justify-between">
+                <span class="font-semibold">Total</span>
+                <span class="font-bold">{{ formatMoney(propostaPendente.contraproposta?.total ?? propostaPendente.totalAcordo) }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="space-y-3">
+            <button @click="cancelarProposta" class="btn-danger w-full">Recusar (cancelar proposta)</button>
+            <RouterLink to="/atendimento" class="btn-secondary w-full block text-center">Voltar ao painel</RouterLink>
+          </div>
+        </template>
+
         <!-- Proposta enviada para Mesa de Crédito -->
-        <template v-if="propostaPendente.status === 'em_analise'">
+        <template v-else-if="propostaPendente.status === 'em_analise'">
           <div class="card text-center py-10 mb-5">
             <div class="w-14 h-14 mx-auto mb-4 bg-amber-50 rounded-full flex items-center justify-center">
               <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>

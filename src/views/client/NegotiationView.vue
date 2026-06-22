@@ -149,7 +149,7 @@ const acordoVivo = computed(() => {
   if (!contract.value) return null
   return flowState.negotiations.find(n =>
     n.contratoId === contract.value.id &&
-    ['em_pagamento', 'em_analise'].includes(n.status)
+    ['em_pagamento', 'em_analise', 'contraproposta'].includes(n.status)
   ) ?? null
 })
 

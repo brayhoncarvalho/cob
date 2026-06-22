@@ -9,7 +9,7 @@ import { useFlow } from '@/stores/flow.js'
 const route  = useRoute()
 const router = useRouter()
 const { formatMoney, formatDate } = useFormatters()
-const { state: flowState, clientCancelNegotiation } = useFlow()
+const { state: flowState, clientCancelNegotiation, acceptCounter } = useFlow()
 
 function cancelarAcordo() {
   if (!acordoAtivo.value) return
@@ -21,7 +21,7 @@ const acordoAtivo = computed(() => {
   if (!contract.value) return null
   return flowState.negotiations.find(n =>
     n.contratoId === contract.value.id &&
-    ['em_pagamento', 'em_analise'].includes(n.status)
+    ['em_pagamento', 'em_analise', 'contraproposta'].includes(n.status)
   ) ?? null
 })
 
@@ -224,37 +224,75 @@ const parcelasEmAberto = computed(() =>
           </div>
         </div>
 
-        <!-- Acordo aprovado — aguardando pagamento da entrada -->
-        <div v-else-if="acordoAtivo && acordoAtivo.status === 'em_pagamento' && !acordoAtivo.entradaPaga" class="mt-4 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 px-5 py-4 text-white shadow-lg">
-          <div class="flex items-center gap-2 mb-3">
-            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <p class="font-bold text-base">Acordo aprovado!</p>
+        <!-- Contraproposta da mesa — aguardando resposta do cliente -->
+        <div v-else-if="acordoAtivo && acordoAtivo.status === 'contraproposta'" class="mt-4 rounded-2xl bg-amber-50 border-2 border-amber-400 px-5 py-4 shadow">
+          <div class="flex items-center gap-2 mb-2">
+            <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
+            <p class="font-bold text-amber-800 text-sm">Contraproposta recebida!</p>
           </div>
-          <p class="text-xs text-teal-100 mb-3">Sua proposta foi aprovada. Pague a entrada para ativar o acordo.</p>
+          <p class="text-xs text-amber-700 mb-3">A mesa de crédito enviou uma nova proposta. Veja as condições e decida:</p>
+          <div class="bg-white rounded-xl px-4 py-3 space-y-1.5 text-xs mb-4 border border-amber-200">
+            <div class="flex justify-between">
+              <span class="text-gray-500">Nova entrada</span>
+              <span class="font-bold text-amber-700">{{ formatMoney(acordoAtivo.contraproposta?.entrada ?? acordoAtivo.entrada) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">Parcelas</span>
+              <span class="font-medium">{{ acordoAtivo.contraproposta?.numParcelas ?? acordoAtivo.numParcelas }}x de {{ formatMoney(acordoAtivo.contraproposta?.valorParcela ?? acordoAtivo.valorParcela) }}</span>
+            </div>
+            <div class="flex justify-between border-t pt-1.5">
+              <span class="font-semibold text-gray-700">Total</span>
+              <span class="font-bold">{{ formatMoney(acordoAtivo.contraproposta?.total ?? acordoAtivo.totalAcordo) }}</span>
+            </div>
+            <p class="text-gray-400 font-mono">{{ acordoAtivo.id }}</p>
+          </div>
+          <div class="space-y-2">
+            <button
+              @click="acceptCounter(acordoAtivo.id)"
+              class="block w-full text-center bg-green-600 text-white font-bold text-sm rounded-xl py-2.5 hover:bg-green-700 transition-colors"
+            >
+              Aceitar contraproposta
+            </button>
+            <button
+              @click="cancelarAcordo"
+              class="block w-full text-center text-xs text-amber-700 border border-amber-300 rounded-xl py-2 hover:bg-amber-100 transition-colors"
+            >
+              Recusar
+            </button>
+          </div>
+        </div>
+
+        <!-- Acordo aprovado — aguardando pagamento da entrada -->
+        <div v-else-if="acordoAtivo && acordoAtivo.status === 'em_pagamento' && !acordoAtivo.entradaPaga" class="mt-4 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 px-5 py-4 shadow-lg">
+          <div class="flex items-center gap-2 mb-3">
+            <svg class="w-5 h-5 text-white shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <p class="font-bold text-base text-white">Acordo aprovado!</p>
+          </div>
+          <p class="text-xs text-green-100 mb-3">Sua proposta foi aprovada. Pague a entrada para ativar o acordo.</p>
           <div class="space-y-1 text-xs mb-4">
             <div class="flex justify-between">
-              <span class="text-teal-200">Entrada</span>
-              <span class="font-bold">{{ formatMoney(acordoAtivo.entrada) }}</span>
+              <span class="text-green-200">Entrada</span>
+              <span class="font-bold text-white">{{ formatMoney(acordoAtivo.entrada) }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-teal-200">Parcelas</span>
-              <span class="font-medium">{{ acordoAtivo.numParcelas }}x de {{ formatMoney(acordoAtivo.valorParcela) }}</span>
+              <span class="text-green-200">Parcelas</span>
+              <span class="font-medium text-white">{{ acordoAtivo.numParcelas }}x de {{ formatMoney(acordoAtivo.valorParcela) }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-teal-200">Protocolo</span>
-              <span class="font-mono text-teal-100">{{ acordoAtivo.id }}</span>
+              <span class="text-green-200">Protocolo</span>
+              <span class="font-mono text-green-100">{{ acordoAtivo.id }}</span>
             </div>
           </div>
           <div class="space-y-2">
             <RouterLink
               :to="`/contratos/${contract.id}/pagar`"
-              class="block w-full text-center bg-white text-teal-700 font-bold text-sm rounded-xl py-2.5 hover:bg-teal-50 transition-colors"
+              class="block w-full text-center bg-white text-green-700 font-bold text-sm rounded-xl py-2.5 hover:bg-green-50 transition-colors"
             >
               Pagar entrada agora
             </RouterLink>
             <button
               @click="cancelarAcordo"
-              class="block w-full text-center text-xs text-teal-200 hover:text-white py-1.5 transition-colors"
+              class="block w-full text-center text-xs text-green-200 hover:text-white py-1.5 transition-colors"
             >
               Cancelar acordo
             </button>

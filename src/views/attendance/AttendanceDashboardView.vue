@@ -391,7 +391,7 @@ const acordosAguardandoPagamentoGlobal = computed(() =>
             <button
               v-else-if="c.acordoAguardandoPagamento.length > 0"
               @click="iniciarAtendimento(c.cpf)"
-              class="text-sm py-2 px-4 whitespace-nowrap rounded-lg border-2 border-teal-500 bg-teal-500 text-white hover:bg-teal-600 font-bold transition-colors flex items-center gap-1.5 shadow"
+              class="text-sm py-2 px-4 whitespace-nowrap rounded-lg border-2 border-green-500 bg-green-500 text-white hover:bg-green-600 font-bold transition-colors flex items-center gap-1.5 shadow"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
