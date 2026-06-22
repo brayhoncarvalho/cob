@@ -225,16 +225,16 @@ const parcelasEmAberto = computed(() =>
         </div>
 
         <!-- Contraproposta da mesa — aguardando resposta do cliente -->
-        <div v-else-if="acordoAtivo && acordoAtivo.status === 'contraproposta'" class="mt-4 rounded-2xl bg-amber-50 border-2 border-amber-400 px-5 py-4 shadow">
+        <div v-else-if="acordoAtivo && acordoAtivo.status === 'contraproposta'" class="mt-4 rounded-2xl bg-blue-50 border-2 border-blue-400 px-5 py-4 shadow">
           <div class="flex items-center gap-2 mb-2">
-            <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
-            <p class="font-bold text-amber-800 text-sm">Contraproposta recebida!</p>
+            <svg class="w-5 h-5 text-blue-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
+            <p class="font-bold text-blue-800 text-sm">Contraproposta recebida!</p>
           </div>
-          <p class="text-xs text-amber-700 mb-3">A mesa de crédito enviou uma nova proposta. Veja as condições e decida:</p>
-          <div class="bg-white rounded-xl px-4 py-3 space-y-1.5 text-xs mb-4 border border-amber-200">
+          <p class="text-xs text-blue-700 mb-3">A mesa de crédito enviou uma nova proposta. Veja as condições e decida:</p>
+          <div class="bg-white rounded-xl px-4 py-3 space-y-1.5 text-xs mb-4 border border-blue-200">
             <div class="flex justify-between">
               <span class="text-gray-500">Nova entrada</span>
-              <span class="font-bold text-amber-700">{{ formatMoney(acordoAtivo.contraproposta?.entrada ?? acordoAtivo.entrada) }}</span>
+              <span class="font-bold text-blue-700">{{ formatMoney(acordoAtivo.contraproposta?.entrada ?? acordoAtivo.entrada) }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500">Parcelas</span>
@@ -255,7 +255,7 @@ const parcelasEmAberto = computed(() =>
             </button>
             <button
               @click="cancelarAcordo"
-              class="block w-full text-center text-xs text-amber-700 border border-amber-300 rounded-xl py-2 hover:bg-amber-100 transition-colors"
+              class="block w-full text-center text-xs text-blue-700 border border-blue-300 rounded-xl py-2 hover:bg-blue-100 transition-colors"
             >
               Recusar
             </button>
