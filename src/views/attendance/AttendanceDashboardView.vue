@@ -34,11 +34,15 @@ const clientesBase = computed(() =>
     const emAnalise       = negociacoes.filter(n => n.status === 'em_analise').length
     // Proposta do atendente aguardando mesa
     const emAnalisePorAtendente = negociacoes.filter(n => n.status === 'em_analise' && n.simuladoPorAtendente).length
+    // Proposta enviada diretamente pelo cliente (sem atendente) aguardando mesa
+    const emAnaliseCliente = negociacoes.filter(n => n.status === 'em_analise' && !n.simuladoPorAtendente).length
+    // Contraproposta da mesa aguardando aceite
+    const contraproposta  = negociacoes.filter(n => n.status === 'contraproposta').length
     // Acordos aprovados pela mesa aguardando pagamento da entrada
     const acordoAguardandoPagamento = negociacoes.filter(n => n.status === 'em_pagamento' && !n.entradaPaga && n.simuladoPorAtendente)
 
-    // Urgência: 0=ok, 1=em análise, 2=em atraso, 3=aguardando aprovação
-    const urgencia = pendingApproval > 0 ? 3 : emAtraso > 0 ? 2 : emAnalise > 0 ? 1 : 0
+    // Urgência: 0=ok, 1=em análise, 2=em atraso, 3=contraproposta/aguardando aprovação
+    const urgencia = (pendingApproval > 0 || contraproposta > 0) ? 3 : emAtraso > 0 ? 2 : emAnalise > 0 ? 1 : 0
 
     return {
       ...c,
@@ -48,6 +52,8 @@ const clientesBase = computed(() =>
       acordoAtivo,
       emAnalise,
       emAnalisePorAtendente,
+      emAnaliseCliente,
+      contraproposta,
       acordoAguardandoPagamento,
       urgencia,
     }
@@ -124,10 +130,10 @@ const metricas = computed(() => [
 
 // Urgência → config visual
 const URGENCIA_CONFIG = {
-  3: { border: 'border-l-4 border-amber-500', badge: 'bg-amber-50 text-amber-700', texto: 'Aguardando aprovação', dot: 'bg-amber-500' },
-  2: { border: 'border-l-4 border-red-500',    badge: 'bg-red-50 text-red-700',    texto: 'Contrato em atraso',     dot: 'bg-red-500' },
-  1: { border: 'border-l-4 border-amber-500',  badge: 'bg-amber-50 text-amber-700', texto: 'Proposta em análise',    dot: 'bg-amber-500' },
-  0: { border: '',                              badge: '',                             texto: '',                       dot: 'bg-gray-400' },
+  3: { border: 'border-l-4 border-blue-500',  badge: 'bg-blue-50 text-blue-700',   texto: 'Ação necessária',       dot: 'bg-blue-500' },
+  2: { border: 'border-l-4 border-red-500',   badge: 'bg-red-50 text-red-700',     texto: 'Contrato em atraso',     dot: 'bg-red-500' },
+  1: { border: 'border-l-4 border-amber-500', badge: 'bg-amber-50 text-amber-700', texto: 'Proposta em análise',    dot: 'bg-amber-500' },
+  0: { border: '',                             badge: '',                            texto: '',                       dot: 'bg-gray-400' },
 }
 
 const COR_METRICA = {
@@ -358,17 +364,41 @@ const acordosAguardandoPagamentoGlobal = computed(() =>
               <span v-if="c.acordoAtivo > 0" class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
                 {{ c.acordoAtivo }} acordo ativo
               </span>
-              <span v-if="c.emAnalise > 0" class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
-                {{ c.emAnalise }} em análise
+              <span v-if="c.emAnaliseCliente > 0" class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                {{ c.emAnaliseCliente }} proposta do cliente
+              </span>
+              <span v-if="c.emAnalisePorAtendente > 0" class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                {{ c.emAnalisePorAtendente }} na mesa (atendente)
+              </span>
+              <span v-if="c.contraproposta > 0" class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                contraproposta pendente
               </span>
             </div>
           </div>
 
           <!-- Ações -->
           <div class="shrink-0 flex flex-col sm:flex-row items-end sm:items-center gap-2">
+            <!-- Contraproposta da mesa aguardando aceite (prioridade máxima) -->
+            <button
+              v-if="c.contraproposta > 0"
+              @click="iniciarAtendimento(c.cpf)"
+              class="text-sm py-2 px-4 whitespace-nowrap rounded-lg border-2 border-blue-500 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold transition-colors flex items-center gap-1.5"
+            >
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
+              Ver contraproposta
+            </button>
+            <!-- Proposta do cliente na mesa (sem atendente) -->
+            <button
+              v-else-if="c.emAnaliseCliente > 0"
+              @click="iniciarAtendimento(c.cpf)"
+              class="text-sm py-2 px-4 whitespace-nowrap rounded-lg border-2 border-purple-400 bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium transition-colors flex items-center gap-1.5"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Acompanhar proposta
+            </button>
             <!-- Proposta do atendente aguardando mesa -->
             <button
-              v-if="c.emAnalisePorAtendente > 0"
+              v-else-if="c.emAnalisePorAtendente > 0"
               @click="iniciarAtendimento(c.cpf)"
               class="text-sm py-2 px-4 whitespace-nowrap rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium transition-colors flex items-center gap-1.5"
             >
@@ -377,7 +407,7 @@ const acordosAguardandoPagamentoGlobal = computed(() =>
             </button>
             <!-- Proposta pendente: mostra botão de acompanhamento, bloqueia nova simulação -->
             <button
-              v-if="c.pendingApproval > 0"
+              v-else-if="c.pendingApproval > 0"
               @click="iniciarAtendimento(c.cpf)"
               class="text-sm py-2 px-4 whitespace-nowrap rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium transition-colors flex items-center gap-1.5"
             >
