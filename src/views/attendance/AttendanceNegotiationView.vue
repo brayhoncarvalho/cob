@@ -10,7 +10,7 @@ import { useRules } from '@/stores/rules.js'
 const route  = useRoute()
 const router = useRouter()
 const { formatMoney } = useFormatters()
-const { state: flowState, submitAttendantProposal, cancelAttendantProposal, markParcelaPaid } = useFlow()
+const { state: flowState, submitAttendantProposal, cancelAttendantProposal, markParcelaPaid, acceptCounter } = useFlow()
 const { state: authState } = useAuth()
 const { rules } = useRules()
 
@@ -30,6 +30,11 @@ function cancelarProposta() {
   if (!propostaPendente.value) return
   cancelAttendantProposal(propostaPendente.value.id)
   cancelando.value = true
+}
+
+function aceitarContraproposta() {
+  if (!propostaPendente.value) return
+  acceptCounter(propostaPendente.value.id)
 }
 
 // ── Contratos ─────────────────────────────────────────────────────────────────
@@ -268,6 +273,7 @@ function confirmPayment() {
             </div>
           </div>
           <div class="space-y-3">
+            <button @click="aceitarContraproposta" class="btn-primary w-full">Aceitar contraproposta</button>
             <button @click="cancelarProposta" class="btn-danger w-full">Recusar (cancelar proposta)</button>
             <RouterLink to="/atendimento" class="btn-secondary w-full block text-center">Voltar ao painel</RouterLink>
           </div>

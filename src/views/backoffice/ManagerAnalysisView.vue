@@ -131,10 +131,10 @@ async function confirmar() {
               <button
                 v-for="d in [{ key: 'aprovar', label: 'Aprovar', cls: 'border-green-500 bg-green-50 text-green-700', iconPath: 'M4.5 12.75l6 6 9-13.5' },
                               { key: 'reprovar', label: 'Reprovar', cls: 'border-red-500 bg-red-50 text-red-700', iconPath: 'M6 18L18 6M6 6l12 12' },
-                              { key: 'contraproposta', label: 'Contraproposta', cls: 'border-amber-500 bg-amber-50 text-amber-700', iconPath: 'M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3' }]"
+                              { key: 'contraproposta', label: 'Contraproposta', cls: 'border-blue-500 bg-blue-50 text-blue-700', iconPath: 'M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3' }]"
                 :key="d.key"
                 @click="decisao = d.key"
-                :class="['w-full p-3 rounded-xl border-2 text-sm font-semibold transition-all flex items-center justify-center gap-1.5', decisao === d.key ? d.cls : 'border-gray-200 text-gray-600 hover:border-gray-300']"
+                :class="['w-full px-3 py-3 min-h-[52px] rounded-xl border-2 text-sm font-semibold transition-all flex items-center justify-center gap-1.5', decisao === d.key ? d.cls : 'border-gray-200 text-gray-600 hover:border-gray-300']"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" :d="d.iconPath"/></svg>
                 {{ d.label }}
