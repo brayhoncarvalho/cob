@@ -276,7 +276,7 @@ function confirmPayment() {
             <button @click="confirmPayment" class="btn-success w-full">
               Simular Pagamento Confirmado
             </button>
-            <button @click="showPayment = false" class="btn-secondary w-full">
+            <button @click="router.push('/atendimento')" class="btn-secondary w-full">
               Pagar depois
             </button>
           </div>
@@ -339,6 +339,10 @@ function confirmPayment() {
           </div>
 
           <div class="space-y-3">
+            <button @click="showPayment = true" class="btn-success w-full flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
+              Registrar pagamento da entrada
+            </button>
             <button @click="cancelarProposta" class="btn-danger w-full">Cancelar acordo</button>
             <RouterLink to="/atendimento" class="btn-secondary w-full block text-center">Voltar ao painel</RouterLink>
           </div>
