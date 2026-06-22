@@ -298,7 +298,7 @@ function carregarMais() {
     </div>
 
     <!-- ── Próximos vencimentos (carregamento progressivo) ────────────── -->
-    <div class="mb-6">
+    <div id="proximos-vencimentos" class="mb-6 scroll-mt-4">
       <div class="flex items-center justify-between mb-3">
         <h2 class="font-semibold text-gray-900 flex items-center gap-2">
           <span class="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">

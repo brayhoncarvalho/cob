@@ -86,11 +86,7 @@ function goToContratos() {
 }
 
 function goToProximoVencimento() {
-  if (proximoVencimento.value?.contratoId) {
-    router.push(`/contratos/${proximoVencimento.value.contratoId}`)
-    return
-  }
-  router.push('/contratos')
+  router.push('/pagamentos')
 }
 
 function goToNegociacoes() {
@@ -250,7 +246,7 @@ function goToNegociacoes() {
       <!-- Próximo vencimento -->
       <button
         type="button"
-        :aria-label="proximoVencimento ? `Ver contrato do próximo vencimento em ${formatDate(proximoVencimento.vencimento)}` : 'Ver contratos'"
+        :aria-label="proximoVencimento ? `Ver pagamentos — próximo vencimento em ${formatDate(proximoVencimento.vencimento)}` : 'Ver pagamentos'"
         class="card w-full text-left min-h-[44px] hover:shadow-md hover:border-blue-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 transition-all"
         @click="goToProximoVencimento"
       >
@@ -261,7 +257,7 @@ function goToNegociacoes() {
         </template>
         <p v-else class="text-sm text-gray-400 mt-1">—</p>
         <div class="mt-3 flex items-center justify-between text-xs font-medium text-blue-600">
-          <span>{{ proximoVencimento ? 'Ver contrato' : 'Ver contratos' }}</span>
+          <span>Ver pagamentos</span>
           <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
           </svg>
