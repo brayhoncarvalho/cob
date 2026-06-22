@@ -197,6 +197,37 @@ function markParcelaPaid(negId, parcelaIdx) {
   persist()
 }
 
+/** Marca parcelas de um contrato como pagas (pagamento direto, não acordo) */
+function payContractParcelas(contratoId, parcelaNumeros) {
+  const c = state.contracts.find(c => c.id === contratoId)
+  if (!c) return
+  for (const num of parcelaNumeros) {
+    const p = c.parcelas.find(p => p.numero === num)
+    if (p && p.status !== 'paga') {
+      p.status = 'paga'
+      p.dataPagamento = new Date().toISOString()
+    }
+  }
+  // Recalcular métricas do contrato
+  const vencidas = c.parcelas.filter(p => p.status === 'vencida')
+  c.parcelasVencidas = vencidas.length
+  c.parcelasPagas = c.parcelas.filter(p => p.status === 'paga').length
+  if (vencidas.length === 0) {
+    c.diasAtraso = 0
+    if (c.parcelas.every(p => p.status === 'paga')) {
+      c.status = 'quitado'
+    } else {
+      c.status = 'em_dia'
+    }
+  }
+  // Promover próxima parcela
+  const proxima = c.parcelas.find(p => p.status === 'futura')
+  if (proxima && !c.parcelas.some(p => p.status === 'proxima')) {
+    proxima.status = 'proxima'
+  }
+  persist()
+}
+
 /** Reseta tudo para o estado inicial dos JSONs */
 function resetFlow() {
   const fresh = freshState()
@@ -207,7 +238,7 @@ function resetFlow() {
 
 /**
  * Atendente simula proposta em nome do cliente.
- * A proposta fica com status 'pending_client_approval' até o cliente aceitar/rejeitar.
+ * A proposta é auto-aprovada imediatamente e vai direto para pagamento.
  */
 function submitAttendantProposal({ id, contratoId, clienteCpf, entrada, numParcelas, valorParcela,
                                    totalAcordo, desconto, atendenteCpf }) {
@@ -216,23 +247,27 @@ function submitAttendantProposal({ id, contratoId, clienteCpf, entrada, numParce
   state.negotiations = state.negotiations.filter(n =>
     n.contratoId !== contratoId || !['em_analise', 'contraproposta', 'pending_client_approval'].includes(n.status)
   )
-  state.negotiations.push({
+  const neg = {
     id,
-    status:              'pending_client_approval',
+    status:              'em_pagamento',
     nivel:               0,
     contratoId,
     clienteCpf,
     simuladoPorAtendente: atendenteCpf,
     dataEnvio:           new Date().toISOString(),
+    dataAprovacao:       new Date().toISOString(),
     prazoResposta:       new Date(Date.now() + 48 * 3600000).toISOString(),
     entrada:             Number(entrada),
     numParcelas:         Number(numParcelas),
     valorParcela:        Number(valorParcela),
     totalAcordo:         Number(totalAcordo),
     desconto:            Number(desconto),
-    parcelas:            [],
-  })
+    parcelas:            _buildParcelas({ entrada: Number(entrada), numParcelas: Number(numParcelas), valorParcela: Number(valorParcela) }),
+  }
+  state.negotiations.push(neg)
+  _activateContract(contratoId, id)
   persist()
+  return neg
 }
 
 /** Cliente aprova proposta sugerida pelo atendente */
@@ -297,6 +332,7 @@ export function useFlow() {
     escalateNegotiation,
     acceptCounter,
     markParcelaPaid,
+    payContractParcelas,
     resetFlow,
     submitAttendantProposal,
     clientApproveProposal,

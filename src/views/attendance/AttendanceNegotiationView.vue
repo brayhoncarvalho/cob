@@ -10,16 +10,16 @@ import { useRules } from '@/stores/rules.js'
 const route  = useRoute()
 const router = useRouter()
 const { formatMoney } = useFormatters()
-const { state: flowState, submitAttendantProposal, cancelAttendantProposal } = useFlow()
+const { state: flowState, submitAttendantProposal, cancelAttendantProposal, markParcelaPaid } = useFlow()
 const { state: authState } = useAuth()
 const { rules } = useRules()
 
 const clienteId = computed(() => route.params.clienteId)
 
-// ── Proposta pendente (enviada pelo atendente, aguardando cliente aprovar) ────
+// ── Proposta com acordo ativo (gerada pelo atendente nesta sessão) ────
 const propostaPendente = computed(() =>
   flowState.negotiations.find(n =>
-    n.clienteCpf === clienteId.value && n.status === 'pending_client_approval'
+    n.clienteCpf === clienteId.value && n.status === 'em_pagamento' && n.simuladoPorAtendente
   ) ?? null
 )
 
@@ -31,7 +31,7 @@ function cancelarProposta() {
 }
 
 // ── Contratos ─────────────────────────────────────────────────────────────────
-const contratos = computed(() => flowState.contracts)
+const contratos = computed(() => flowState.contracts.filter(c => c.status !== 'quitado'))
 const contratoSelecionado = ref(contratos.value[0]?.id ?? '')
 
 const contract = computed(() => flowState.contracts.find(c => c.id === contratoSelecionado.value))
@@ -173,11 +173,13 @@ const bloqueio = computed(() => {
 
 const submitted   = ref(false)
 const submittedId = ref('')
+const showPayment = ref(false)
+const paymentConfirmed = ref(false)
 
 function simular() {
   if (bloqueio.value) return
   const id = `NEG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
-  submitAttendantProposal({
+  const result = submitAttendantProposal({
     id,
     contratoId:   contratoSelecionado.value,
     clienteCpf:   clienteId.value,
@@ -188,8 +190,20 @@ function simular() {
     desconto:     descontoReais.value,
     atendenteCpf: authState.user?.cpf,
   })
+  if (result?.error) return
   submittedId.value = id
   submitted.value = true
+  showPayment.value = true
+}
+
+function confirmPayment() {
+  // Mark entrada (first parcela, index 0) as paid
+  const neg = flowState.negotiations.find(n => n.id === submittedId.value)
+  if (neg?.parcelas?.length) {
+    markParcelaPaid(submittedId.value, 0)
+  }
+  paymentConfirmed.value = true
+  showPayment.value = false
 }
 </script>
 
@@ -199,85 +213,61 @@ function simular() {
     back-to="/atendimento"
     back-label="Painel de Atendimento"
   >
-    <!-- ── Proposta pendente: aguardando aprovação do cliente ── -->
+    <!-- ── Proposta com acordo ativo: pagamento ── -->
     <template v-if="propostaPendente && !cancelando">
       <div class="max-w-lg mx-auto">
 
-        <!-- Banner de status -->
-        <div class="rounded-2xl bg-amber-50 border border-amber-500/25 px-5 py-4 mb-5 flex items-start gap-3">
-          <div class="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
-            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
+        <!-- Pagamento confirmado -->
+        <template v-if="paymentConfirmed">
+          <div class="card text-center py-10 mb-5">
+            <svg class="w-14 h-14 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <h2 class="text-xl font-bold text-green-700 mb-2">Pagamento Confirmado!</h2>
+            <p class="text-sm text-gray-500">Acordo ativado e entrada paga com sucesso.</p>
+            <p class="text-xs font-mono font-semibold text-gray-700 mt-3">Protocolo: {{ propostaPendente.id }}</p>
           </div>
-          <div>
-            <p class="font-semibold text-amber-900 text-sm">Proposta aguardando pagamento do cliente.</p>
-            <p class="text-xs text-amber-600 mt-0.5">
-              Enviada em {{ new Date(propostaPendente.dataEnvio).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) }}
-              · Protocolo <span class="font-mono font-semibold">{{ propostaPendente.id }}</span>
-            </p>
+          <div class="space-y-3">
+            <button @click="paymentConfirmed = false; submitted = false; entrada = 0" class="btn-secondary w-full">Nova simulação</button>
+            <RouterLink to="/atendimento" class="btn-primary w-full block text-center">Voltar ao painel</RouterLink>
           </div>
-        </div>
+        </template>
 
-        <!-- Detalhes da proposta -->
-        <div class="card mb-5">
-          <h3 class="font-semibold text-gray-800 mb-4 text-sm uppercase tracking-wide">Condições enviadas ao cliente</h3>
-          <div class="grid grid-cols-2 gap-3 text-sm">
-            <div class="bg-gray-50 rounded-xl p-3">
-              <p class="text-xs text-gray-400 mb-0.5">Contrato</p>
-              <p class="font-semibold text-gray-800">#{{ propostaPendente.contratoId }}</p>
+        <!-- Modal de pagamento Pix -->
+        <template v-else-if="showPayment">
+          <div class="card text-center py-6 mb-5">
+            <div class="w-16 h-16 mx-auto mb-4 bg-blue-50 rounded-2xl flex items-center justify-center">
+              <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z"/></svg>
             </div>
-            <div class="bg-gray-50 rounded-xl p-3">
-              <p class="text-xs text-gray-400 mb-0.5">Total do acordo</p>
-              <p class="font-semibold text-blue-700">{{ formatMoney(propostaPendente.totalAcordo) }}</p>
-            </div>
-            <div class="bg-gray-50 rounded-xl p-3">
-              <p class="text-xs text-gray-400 mb-0.5">Entrada (Pix)</p>
-              <p class="font-semibold text-gray-800">{{ formatMoney(propostaPendente.entrada) }}</p>
-            </div>
-            <div class="bg-gray-50 rounded-xl p-3">
-              <p class="text-xs text-gray-400 mb-0.5">Parcelas</p>
-              <p class="font-semibold text-gray-800">
-                {{ propostaPendente.numParcelas }}x de {{ formatMoney(propostaPendente.valorParcela) }}
-              </p>
-            </div>
-            <div class="bg-green-50 rounded-xl p-3 col-span-2">
-              <p class="text-xs text-green-600 mb-0.5">Desconto concedido</p>
-              <p class="font-semibold text-green-700">{{ formatMoney(propostaPendente.desconto) }}</p>
+            <h3 class="text-lg font-bold text-gray-900 mb-1">Pagamento da Entrada via Pix</h3>
+            <p class="text-2xl font-bold text-blue-700 mb-4">{{ formatMoney(propostaPendente.entrada) }}</p>
+            <div class="bg-gray-50 rounded-xl p-4 mb-4 text-left">
+              <p class="text-xs text-gray-400 mb-1">Chave Pix (copia e cola)</p>
+              <p class="text-xs font-mono text-gray-700 break-all">00020126580014br.gov.bcb.pix0136portal-cobranca-{{ propostaPendente.id }}</p>
             </div>
           </div>
-
-          <!-- Prazo -->
-          <div class="mt-4 flex items-center gap-2 text-xs text-gray-500 border-t border-gray-100 pt-3">
-            <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            Prazo de resposta:
-            <span class="font-semibold text-gray-700">
-              {{ new Date(propostaPendente.prazoResposta).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) }}
-            </span>
+          <div class="space-y-3">
+            <button @click="confirmPayment" class="btn-success w-full">
+              Simular Pagamento Confirmado
+            </button>
+            <button @click="showPayment = false" class="btn-secondary w-full">
+              Pagar depois
+            </button>
           </div>
-        </div>
+        </template>
 
-        <!-- Ações -->
-        <div class="space-y-3">
-          <button
-            @click="cancelarProposta"
-            class="btn-danger w-full flex items-center justify-center gap-2"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-            Cancelar proposta enviada
-          </button>
-          <RouterLink to="/atendimento" class="btn-secondary w-full block text-center">
-            Voltar ao painel
-          </RouterLink>
-        </div>
-
-        <p class="text-center text-xs text-gray-400 mt-4">
-          Ao cancelar, o cliente perderá acesso a esta oferta e uma nova simulação poderá ser feita.
-        </p>
+        <!-- Acordo ativo (sem pagamento pendente nesta sessão) -->
+        <template v-else-if="!submitted">
+          <div class="rounded-2xl bg-green-50 border border-green-500/25 px-5 py-4 mb-5 flex items-start gap-3">
+            <svg class="w-5 h-5 text-green-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div>
+              <p class="font-semibold text-green-900 text-sm">Acordo ativo neste contrato.</p>
+              <p class="text-xs text-green-600 mt-0.5">Protocolo: {{ propostaPendente.id }}</p>
+            </div>
+          </div>
+          <div class="space-y-3">
+            <button @click="cancelarProposta" class="btn-danger w-full">Cancelar acordo</button>
+            <RouterLink to="/atendimento" class="btn-secondary w-full block text-center">Voltar ao painel</RouterLink>
+          </div>
+        </template>
       </div>
     </template>
 
@@ -302,13 +292,13 @@ function simular() {
       </div>
     </template>
 
-    <!-- Sucesso (proposta recém enviada nesta sessão) -->
-    <template v-if="submitted && !propostaPendente">
+    <!-- Sucesso (proposta recém enviada — mas showPayment já exibe o pagamento) -->
+    <template v-if="submitted && !propostaPendente && !showPayment && !paymentConfirmed">
       <div class="max-w-lg mx-auto">
         <div class="card text-center py-10 mb-6">
           <svg class="w-14 h-14 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <h2 class="text-xl font-bold text-green-700 mb-2">Proposta enviada ao cliente!</h2>
-          <p class="text-gray-500 text-sm">O cliente receberá uma notificação para aprovar ou rejeitar a proposta.</p>
+          <h2 class="text-xl font-bold text-green-700 mb-2">Acordo ativado!</h2>
+          <p class="text-gray-500 text-sm">O acordo foi criado e está ativo.</p>
           <p class="text-xs font-mono font-semibold text-gray-700 mt-3">Protocolo: {{ submittedId }}</p>
         </div>
 
@@ -346,12 +336,12 @@ function simular() {
           <!-- Situação resumida -->
           <div v-if="contract" class="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
             <div>
-              <p class="text-xs text-gray-400">Saldo devedor total</p>
-              <p class="font-semibold text-red-700">{{ formatMoney(contract.saldoDevedor) }}</p>
-            </div>
-            <div>
               <p class="text-xs text-gray-400">Débito vencido</p>
               <p class="font-semibold text-red-600">{{ formatMoney(totalDebitoVencido) }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400">Saldo devedor total</p>
+              <p class="font-semibold text-red-700">{{ formatMoney(contract.saldoDevedor) }}</p>
             </div>
             <div>
               <p class="text-xs text-gray-400">Dias em atraso</p>

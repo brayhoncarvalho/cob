@@ -4,12 +4,14 @@ import { useAuth } from '@/stores/auth.js'
 import { useRouter } from 'vue-router'
 import { useFlow } from '@/stores/flow.js'
 import { useRules } from '@/stores/rules.js'
+import { useProposal } from '@/stores/proposal.js'
 
 const { state, logout } = useAuth()
 const router = useRouter()
 const baseUrl = import.meta.env.BASE_URL
 const { resetFlow } = useFlow()
 const { resetRules } = useRules()
+const { clear: clearProposal } = useProposal()
 
 const userInitials = computed(() => {
   const nome = state.user?.nome || ''
@@ -30,6 +32,7 @@ function handleReset() {
   showDropdown.value = false
   resetFlow()
   resetRules()
+  clearProposal()
   router.push('/atendimento')
 }
 

@@ -8,7 +8,7 @@ import { useFlow } from '@/stores/flow.js'
 const route  = useRoute()
 const router = useRouter()
 const { formatMoney, formatDate } = useFormatters()
-const { state: flowState } = useFlow()
+const { state: flowState, payContractParcelas } = useFlow()
 
 const contract = computed(() => flowState.contracts.find(c => c.id === route.params.id))
 
@@ -70,6 +70,9 @@ function copyPix() {
 }
 
 function simulatePayment() {
+  // Mark parcelas as paid in the store
+  const nums = parcelasSelecionadas.value.map(p => p.numero)
+  payContractParcelas(route.params.id, nums)
   paymentState.value = 'confirmed'
 }
 

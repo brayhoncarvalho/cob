@@ -74,7 +74,6 @@ const precisaEscalar = computed(() =>
 
 async function confirmar() {
   if (!decisao.value) return
-  if ((decisao.value === 'reprovar' || decisao.value === 'contraproposta') && !motivo.value.trim()) return
   loading.value = true
   await new Promise(r => setTimeout(r, 800))
   loading.value = false
@@ -237,7 +236,7 @@ async function confirmar() {
             <!-- Motivo (reprovar / contraproposta) -->
             <div v-if="decisao === 'reprovar' || decisao === 'contraproposta'" class="mb-4">
               <label class="block text-xs font-medium text-gray-700 mb-1">
-                Motivo / Observação <span class="text-red-500">*</span>
+                Motivo / Observação
               </label>
               <textarea
                 v-model="motivo"

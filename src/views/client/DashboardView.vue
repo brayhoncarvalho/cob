@@ -126,7 +126,7 @@ function goToNegociacoes() {
         <p class="text-sm mt-0.5">Total em atraso: <strong>{{ formatMoney(totalEmAberto) }}</strong> — juros continuam acumulando.</p>
       </div>
       <div class="flex gap-2 shrink-0">
-        <RouterLink to="/contratos" class="btn-danger text-sm py-2 px-4">Pagar Agora</RouterLink>
+        <RouterLink :to="primeiroContratoEmAtraso ? `/contratos/${primeiroContratoEmAtraso.id}` : '/contratos'" class="btn-danger text-sm py-2 px-4">Pagar Agora</RouterLink>
       </div>
     </div>
 
