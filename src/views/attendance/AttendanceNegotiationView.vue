@@ -225,6 +225,34 @@ function confirmPayment() {
             <p class="text-sm text-gray-500">Acordo ativado e entrada paga com sucesso.</p>
             <p class="text-xs font-mono font-semibold text-gray-700 mt-3">Protocolo: {{ propostaPendente.id }}</p>
           </div>
+
+          <!-- Resumo do acordo -->
+          <div class="card mb-5">
+            <h3 class="font-semibold text-gray-800 mb-3 text-sm">Detalhes do acordo</h3>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-500">Contrato</span>
+                <span class="font-medium">#{{ propostaPendente.contratoId }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Entrada (paga)</span>
+                <span class="font-bold text-green-700">{{ formatMoney(propostaPendente.entrada) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Parcelas</span>
+                <span class="font-medium">{{ propostaPendente.numParcelas }}x de {{ formatMoney(propostaPendente.valorParcela) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Desconto</span>
+                <span class="font-medium text-green-600">{{ formatMoney(propostaPendente.desconto) }}</span>
+              </div>
+              <div class="border-t pt-2 flex justify-between">
+                <span class="font-semibold">Total do acordo</span>
+                <span class="font-bold">{{ formatMoney(propostaPendente.totalAcordo) }}</span>
+              </div>
+            </div>
+          </div>
+
           <div class="space-y-3">
             <button @click="paymentConfirmed = false; submitted = false; entrada = 0" class="btn-secondary w-full">Nova simulação</button>
             <RouterLink to="/atendimento" class="btn-primary w-full block text-center">Voltar ao painel</RouterLink>
@@ -263,6 +291,53 @@ function confirmPayment() {
               <p class="text-xs text-green-600 mt-0.5">Protocolo: {{ propostaPendente.id }}</p>
             </div>
           </div>
+
+          <!-- Resumo do acordo -->
+          <div class="card mb-5">
+            <h3 class="font-semibold text-gray-800 mb-3 text-sm">Detalhes do acordo</h3>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-500">Contrato</span>
+                <span class="font-medium">#{{ propostaPendente.contratoId }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Entrada</span>
+                <span class="font-bold text-blue-700">{{ formatMoney(propostaPendente.entrada) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Parcelas</span>
+                <span class="font-medium">{{ propostaPendente.numParcelas }}x de {{ formatMoney(propostaPendente.valorParcela) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Desconto</span>
+                <span class="font-medium text-green-600">{{ formatMoney(propostaPendente.desconto) }}</span>
+              </div>
+              <div class="border-t pt-2 flex justify-between">
+                <span class="font-semibold">Total</span>
+                <span class="font-bold">{{ formatMoney(propostaPendente.totalAcordo) }}</span>
+              </div>
+            </div>
+
+            <!-- Parcelas do acordo -->
+            <div v-if="propostaPendente.parcelas?.length" class="mt-4 border-t pt-3">
+              <p class="text-xs font-semibold text-gray-500 mb-2">Parcelas</p>
+              <div class="space-y-1.5 max-h-48 overflow-y-auto">
+                <div
+                  v-for="(p, i) in propostaPendente.parcelas"
+                  :key="i"
+                  class="flex items-center justify-between text-xs px-2 py-1.5 rounded-lg"
+                  :class="p.status === 'paga' ? 'bg-green-50' : 'bg-gray-50'"
+                >
+                  <span class="text-gray-600">{{ i === 0 ? 'Entrada' : `Parcela ${i}` }}</span>
+                  <span class="font-medium" :class="p.status === 'paga' ? 'text-green-700' : 'text-gray-800'">
+                    {{ formatMoney(p.valor) }}
+                    <span v-if="p.status === 'paga'" class="ml-1 text-green-600">✓</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="space-y-3">
             <button @click="cancelarProposta" class="btn-danger w-full">Cancelar acordo</button>
             <RouterLink to="/atendimento" class="btn-secondary w-full block text-center">Voltar ao painel</RouterLink>
