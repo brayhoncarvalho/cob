@@ -167,11 +167,13 @@ const proposalStatusAtt = computed(() => {
 })
 
 // Feedback de bloqueio
-// Acordo realmente ativo: ignora acordoAtivo que aponta para negociação inativa
+// Acordo realmente ativo: busca qualquer negociação ativa para este contrato
 const acordoVivo = computed(() => {
-  if (!contract.value?.acordoAtivo) return null
-  const neg = flowState.negotiations.find(n => n.id === contract.value.acordoAtivo)
-  return neg && ['em_pagamento', 'em_analise'].includes(neg.status) ? neg : null
+  if (!contract.value) return null
+  return flowState.negotiations.find(n =>
+    n.contratoId === contract.value.id &&
+    ['em_pagamento', 'em_analise'].includes(n.status)
+  ) ?? null
 })
 
 const bloqueio = computed(() => {

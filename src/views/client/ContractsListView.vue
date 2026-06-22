@@ -27,9 +27,11 @@ function totalVencidoContrato(c) {
 
 // Retorna o ID do acordo somente se a negociação ainda está ativa
 function acordoVivoDeContrato(c) {
-  if (!c.acordoAtivo) return null
-  const neg = flowState.negotiations.find(n => n.id === c.acordoAtivo)
-  return neg && ['em_pagamento', 'em_analise'].includes(neg.status) ? neg.id : null
+  const neg = flowState.negotiations.find(n =>
+    n.contratoId === c.id &&
+    ['em_pagamento', 'em_analise'].includes(n.status)
+  )
+  return neg ? neg.id : null
 }
 </script>
 

@@ -2,10 +2,12 @@
   {
     "id": "NEG-2026-4521",
     "contratoId": "1234",
-    "status": "em_analise",
+    "status": "reprovada",
     "nivel": 1,
     "dataEnvio": "2026-06-17T14:32:00",
     "prazoResposta": "2026-06-18T14:32:00",
+    "dataReprovacao": "2026-06-18T10:00:00",
+    "motivoAnalise": "Valor de entrada insuficiente para o perfil de risco",
     "entrada": 2500,
     "numParcelas": 10,
     "valorParcela": 1100,

@@ -13,9 +13,11 @@ const { state: flowState } = useFlow()
 
 const contract = computed(() => flowState.contracts.find(c => c.id === route.params.id))
 const acordoAtivo = computed(() => {
-  if (!contract.value?.acordoAtivo) return null
-  const neg = flowState.negotiations.find(n => n.id === contract.value.acordoAtivo)
-  return neg && ['em_pagamento', 'em_analise'].includes(neg.status) ? neg : null
+  if (!contract.value) return null
+  return flowState.negotiations.find(n =>
+    n.contratoId === contract.value.id &&
+    ['em_pagamento', 'em_analise'].includes(n.status)
+  ) ?? null
 })
 
 // Valores derivados das parcelas (fonte da verdade)
