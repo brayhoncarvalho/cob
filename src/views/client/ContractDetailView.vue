@@ -14,7 +14,8 @@ const { state: flowState } = useFlow()
 const contract = computed(() => flowState.contracts.find(c => c.id === route.params.id))
 const acordoAtivo = computed(() => {
   if (!contract.value?.acordoAtivo) return null
-  return flowState.negotiations.find(n => n.id === contract.value.acordoAtivo)
+  const neg = flowState.negotiations.find(n => n.id === contract.value.acordoAtivo)
+  return neg && ['em_pagamento', 'em_analise'].includes(neg.status) ? neg : null
 })
 
 // Valores derivados das parcelas (fonte da verdade)
@@ -329,7 +330,7 @@ const parcelasEmAberto = computed(() =>
               Antecipar Parcelas
             </RouterLink>
             <RouterLink
-              v-if="contract.parcelasVencidas > 0 && !contract.acordoAtivo"
+              v-if="contract.parcelasVencidas > 0 && !acordoAtivo"
               :to="`/contratos/${contract.id}/negociar`"
               class="btn-primary text-sm py-1.5 px-3"
             >
