@@ -209,7 +209,7 @@ async function confirmar() {
           <!-- Botões de decisão -->
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <h3 class="font-semibold text-gray-900 mb-4">Decisão</h3>
-            <div class="grid grid-cols-3 gap-2 mb-4">
+            <div class="grid grid-cols-2 gap-2 mb-4">
               <button
                 @click="decisao = 'aprovar'"
                 :class="['p-3 rounded-xl border-2 text-sm font-semibold transition-all text-center flex items-center justify-center gap-1.5', decisao === 'aprovar' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600 hover:border-green-500']"
@@ -226,7 +226,7 @@ async function confirmar() {
               </button>
               <button
                 @click="decisao = 'contraproposta'"
-                :class="['px-3 py-3 min-h-[52px] rounded-xl border-2 text-sm font-semibold transition-all text-center flex items-center justify-center gap-1.5', decisao === 'contraproposta' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-blue-500']"
+                :class="['col-span-2 p-3 rounded-xl border-2 text-sm font-semibold transition-all text-center flex items-center justify-center gap-1.5', decisao === 'contraproposta' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-blue-500']"
               >
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
                 Contraproposta

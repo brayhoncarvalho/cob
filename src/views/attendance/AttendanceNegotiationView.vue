@@ -20,8 +20,7 @@ const clienteId = computed(() => route.params.clienteId)
 const propostaPendente = computed(() =>
   flowState.negotiations.find(n =>
     n.clienteCpf === clienteId.value &&
-    ['em_pagamento', 'em_analise', 'contraproposta'].includes(n.status) &&
-    n.simuladoPorAtendente
+    ['em_pagamento', 'em_analise', 'contraproposta'].includes(n.status)
   ) ?? null
 )
 
