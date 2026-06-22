@@ -57,7 +57,7 @@ const proximosVencimentos = computed(() => {
   const items = []
   contracts.forEach(c => {
     if (contratoComAcordo.value.has(c.id)) return
-    c.parcelas.filter(p => p.status === 'proxima' || p.status === 'futura').forEach(p => {
+    c.parcelas.filter(p => p.status === 'proxima').forEach(p => {
       items.push({
         sourceType: 'contrato',
         sourceLabel: `Contrato #${c.id}`,
@@ -71,7 +71,7 @@ const proximosVencimentos = computed(() => {
     })
   })
   negotiations.filter(n => n.status === 'em_pagamento' && n.entradaPaga).forEach(n => {
-    n.parcelas?.filter(p => p.status === 'proxima' || p.status === 'futura').forEach(p => {
+    n.parcelas?.filter(p => p.status === 'proxima').forEach(p => {
       items.push({
         sourceType: 'acordo',
         sourceLabel: `Acordo ${n.id}`,
