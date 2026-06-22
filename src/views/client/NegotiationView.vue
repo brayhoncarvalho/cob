@@ -189,6 +189,9 @@ const canSubmit = computed(() => !proposalStatus.value.startsWith('blocked'))
 function submit() {
   if (!canSubmit.value) return
 
+  // Capturar o status ANTES de criar a negociação (a reatividade vai mudar proposalStatus)
+  const statusAtual = proposalStatus.value
+
   const id = `NEG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
 
   flowSubmit({
@@ -199,7 +202,7 @@ function submit() {
     valorParcela:  valorParcela.value,
     totalAcordo:   totalAcordo.value,
     desconto:      descontoReais.value,
-    proposalStatus: proposalStatus.value,
+    proposalStatus: statusAtual,
   })
 
   setProposal({
@@ -215,7 +218,7 @@ function submit() {
     descontoPct:   descontoPct.value,
     primeiroBoleto: primeiroBoleto.value,
   })
-  setResult({ scenario: proposalStatus.value })
+  setResult({ scenario: statusAtual })
   setContractSnapshot({ ...contract.value })
   router.push('/proposta/resultado')
 }

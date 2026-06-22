@@ -257,8 +257,8 @@ function payContractParcelas(contratoId, parcelaNumeros) {
 /** Reseta tudo para o estado inicial dos JSONs */
 function resetFlow() {
   const fresh = freshState()
-  state.negotiations = fresh.negotiations
-  state.contracts    = fresh.contracts
+  state.negotiations.splice(0, state.negotiations.length, ...fresh.negotiations)
+  state.contracts.splice(0, state.contracts.length, ...fresh.contracts)
   localStorage.removeItem(STORAGE_KEY)
 }
 
