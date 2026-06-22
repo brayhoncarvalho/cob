@@ -234,6 +234,11 @@ function payContractParcelas(contratoId, parcelaNumeros) {
       p.dataPagamento = new Date().toISOString()
     }
   }
+  // Marcar entradaPaga na negociação ativa deste contrato
+  const negAtiva = state.negotiations.find(n =>
+    n.contratoId === contratoId && n.status === 'em_pagamento'
+  )
+  if (negAtiva) negAtiva.entradaPaga = true
   // Recalcular métricas do contrato
   const vencidas = c.parcelas.filter(p => p.status === 'vencida')
   c.parcelasVencidas = vencidas.length
