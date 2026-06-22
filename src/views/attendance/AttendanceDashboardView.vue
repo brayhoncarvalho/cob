@@ -28,10 +28,12 @@ const clientesBase = computed(() =>
       ? flowState.contracts
       : []
 
-    const emAtraso       = contratos.filter(ct => ct.status === 'em_atraso').length
+    const emAtraso        = contratos.filter(ct => ct.status === 'em_atraso').length
     const pendingApproval = negociacoes.filter(n => n.status === 'pending_client_approval').length
     const acordoAtivo     = negociacoes.filter(n => n.status === 'em_pagamento').length
     const emAnalise       = negociacoes.filter(n => n.status === 'em_analise').length
+    // Proposta do atendente aguardando mesa
+    const emAnalisePorAtendente = negociacoes.filter(n => n.status === 'em_analise' && n.simuladoPorAtendente).length
 
     // Urgência: 0=ok, 1=em análise, 2=em atraso, 3=aguardando aprovação
     const urgencia = pendingApproval > 0 ? 3 : emAtraso > 0 ? 2 : emAnalise > 0 ? 1 : 0
@@ -43,6 +45,7 @@ const clientesBase = computed(() =>
       pendingApproval,
       acordoAtivo,
       emAnalise,
+      emAnalisePorAtendente,
       urgencia,
     }
   })
@@ -324,6 +327,15 @@ function initials(nome) {
 
           <!-- Ações -->
           <div class="shrink-0 flex flex-col sm:flex-row items-end sm:items-center gap-2">
+            <!-- Proposta do atendente aguardando mesa -->
+            <button
+              v-if="c.emAnalisePorAtendente > 0"
+              @click="iniciarAtendimento(c.cpf)"
+              class="text-sm py-2 px-4 whitespace-nowrap rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium transition-colors flex items-center gap-1.5"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Na mesa
+            </button>
             <!-- Proposta pendente: mostra botão de acompanhamento, bloqueia nova simulação -->
             <button
               v-if="c.pendingApproval > 0"

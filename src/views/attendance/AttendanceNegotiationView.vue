@@ -19,7 +19,9 @@ const clienteId = computed(() => route.params.clienteId)
 // ── Proposta com acordo ativo (gerada pelo atendente nesta sessão) ────
 const propostaPendente = computed(() =>
   flowState.negotiations.find(n =>
-    n.clienteCpf === clienteId.value && n.status === 'em_pagamento' && n.simuladoPorAtendente
+    n.clienteCpf === clienteId.value &&
+    ['em_pagamento', 'em_analise'].includes(n.status) &&
+    n.simuladoPorAtendente
   ) ?? null
 )
 
@@ -154,6 +156,16 @@ const bloqueioNegocio = computed(() => {
   return null
 })
 
+// Auto-aprovação: mesmas regras do cliente
+const proposalStatusAtt = computed(() => {
+  const autoOk =
+    entradaPct.value >= rules.entradaMinimaPct &&
+    numParcelas.value <= rules.parcelasMaxAutoAprovacao &&
+    (contract.value?.diasAtraso ?? 0) <= rules.atrasoMaxAutoAprovacao &&
+    totalDue.value <= rules.valorMaxAutoAprovacao
+  return autoOk ? 'auto' : 'mesa'
+})
+
 // Feedback de bloqueio
 const bloqueio = computed(() => {
   if (bloqueioNegocio.value?.tipo === 'tentativas')
@@ -181,19 +193,20 @@ function simular() {
   const id = `NEG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
   const result = submitAttendantProposal({
     id,
-    contratoId:   contratoSelecionado.value,
-    clienteCpf:   clienteId.value,
-    entrada:      entradaEfetiva.value,
-    numParcelas:  numParcelas.value,
-    valorParcela: valorParcela.value,
-    totalAcordo:  totalAcordo.value,
-    desconto:     descontoReais.value,
-    atendenteCpf: authState.user?.cpf,
+    contratoId:    contratoSelecionado.value,
+    clienteCpf:    clienteId.value,
+    entrada:       entradaEfetiva.value,
+    numParcelas:   numParcelas.value,
+    valorParcela:  valorParcela.value,
+    totalAcordo:   totalAcordo.value,
+    desconto:      descontoReais.value,
+    atendenteCpf:  authState.user?.cpf,
+    proposalStatus: proposalStatusAtt.value,
   })
   if (result?.error) return
   submittedId.value = id
   submitted.value = true
-  showPayment.value = true
+  showPayment.value = proposalStatusAtt.value === 'auto'
 }
 
 function confirmPayment() {
@@ -217,10 +230,52 @@ function confirmPayment() {
     <template v-if="propostaPendente && !cancelando">
       <div class="max-w-lg mx-auto">
 
-        <!-- Pagamento confirmado -->
-        <template v-if="paymentConfirmed">
+        <!-- Proposta enviada para Mesa de Crédito -->
+        <template v-else-if="propostaPendente.status === 'em_analise'">
           <div class="card text-center py-10 mb-5">
-            <svg class="w-14 h-14 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div class="w-14 h-14 mx-auto mb-4 bg-amber-50 rounded-full flex items-center justify-center">
+              <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <h2 class="text-xl font-bold text-amber-700 mb-2">Aguardando Mesa de Crédito</h2>
+            <p class="text-sm text-gray-500 mb-1">A proposta não atende os critérios de auto-aprovação.</p>
+            <p class="text-xs text-gray-400">Protocolo: <span class="font-mono font-semibold text-gray-700">{{ propostaPendente.id }}</span></p>
+          </div>
+
+          <div class="card mb-5">
+            <h3 class="font-semibold text-gray-800 mb-3 text-sm">Condições enviadas para análise</h3>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-500">Contrato</span>
+                <span class="font-medium">#{{ propostaPendente.contratoId }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Entrada</span>
+                <span class="font-bold text-blue-700">{{ formatMoney(propostaPendente.entrada) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Parcelas</span>
+                <span class="font-medium">{{ propostaPendente.numParcelas }}x de {{ formatMoney(propostaPendente.valorParcela) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Desconto</span>
+                <span class="font-medium text-green-600">{{ formatMoney(propostaPendente.desconto) }}</span>
+              </div>
+              <div class="border-t pt-2 flex justify-between">
+                <span class="font-semibold">Total</span>
+                <span class="font-bold">{{ formatMoney(propostaPendente.totalAcordo) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <RouterLink to="/backoffice/fila" class="btn-primary w-full block text-center">Ver fila de aprovação</RouterLink>
+            <RouterLink to="/atendimento" class="btn-secondary w-full block text-center">Voltar ao painel</RouterLink>
+          </div>
+        </template>
+
+        <!-- Acordo ativo (em_pagamento): pagamento confirmado -->
+        <template v-else-if="paymentConfirmed">
+          <div class="card text-center py-10 mb-5"> fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             <h2 class="text-xl font-bold text-green-700 mb-2">Pagamento Confirmado!</h2>
             <p class="text-sm text-gray-500">Acordo ativado e entrada paga com sucesso.</p>
             <p class="text-xs font-mono font-semibold text-gray-700 mt-3">Protocolo: {{ propostaPendente.id }}</p>

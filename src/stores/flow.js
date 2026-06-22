@@ -238,34 +238,38 @@ function resetFlow() {
 
 /**
  * Atendente simula proposta em nome do cliente.
- * A proposta é auto-aprovada imediatamente e vai direto para pagamento.
+ * Se auto-aprovável → status em_pagamento direto.
+ * Se não → status em_analise (vai para mesa de crédito).
  */
 function submitAttendantProposal({ id, contratoId, clienteCpf, entrada, numParcelas, valorParcela,
-                                   totalAcordo, desconto, atendenteCpf }) {
+                                   totalAcordo, desconto, atendenteCpf, proposalStatus }) {
   const bloqueio = _verificarBloqueio(contratoId)
   if (bloqueio) return { error: bloqueio }
+
+  const isAuto = proposalStatus === 'auto'
+
   state.negotiations = state.negotiations.filter(n =>
     n.contratoId !== contratoId || !['em_analise', 'contraproposta', 'pending_client_approval'].includes(n.status)
   )
   const neg = {
     id,
-    status:              'em_pagamento',
-    nivel:               0,
+    status:              isAuto ? 'em_pagamento' : 'em_analise',
+    nivel:               isAuto ? 0 : 1,
     contratoId,
     clienteCpf,
     simuladoPorAtendente: atendenteCpf,
     dataEnvio:           new Date().toISOString(),
-    dataAprovacao:       new Date().toISOString(),
+    dataAprovacao:       isAuto ? new Date().toISOString() : null,
     prazoResposta:       new Date(Date.now() + 48 * 3600000).toISOString(),
     entrada:             Number(entrada),
     numParcelas:         Number(numParcelas),
     valorParcela:        Number(valorParcela),
     totalAcordo:         Number(totalAcordo),
     desconto:            Number(desconto),
-    parcelas:            _buildParcelas({ entrada: Number(entrada), numParcelas: Number(numParcelas), valorParcela: Number(valorParcela) }),
+    parcelas:            isAuto ? _buildParcelas({ entrada: Number(entrada), numParcelas: Number(numParcelas), valorParcela: Number(valorParcela) }) : null,
   }
   state.negotiations.push(neg)
-  _activateContract(contratoId, id)
+  if (isAuto) _activateContract(contratoId, id)
   persist()
   return neg
 }
