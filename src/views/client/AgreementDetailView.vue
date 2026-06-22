@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
@@ -66,6 +66,13 @@ const modalPagamento = ref(false)
 const modalIdxParcela = ref(null)        // índice da parcela selecionada (null = próxima vencida)
 const metodoPagamento = ref(null)        // 'pix' | 'boleto'
 
+// Auto-open payment modal via ?pagar=1 query param
+onMounted(() => {
+  if (route.query.pagar === '1' && negotiation.value?.status === 'em_pagamento') {
+    abrirModalPagamento()
+  }
+})
+
 function abrirModalPagamento(idx = null) {
   modalIdxParcela.value = idx
   metodoPagamento.value = null
@@ -103,6 +110,11 @@ function copiarPix() {
 }
 
 function fecharPix() {
+  pixAberto.value = false
+  _pixPendingIdx.value = null
+}
+
+function confirmarPixPagamento() {
   const idx = _pixPendingIdx.value
   pixAberto.value = false
   _pixPendingIdx.value = null
@@ -113,19 +125,26 @@ function fecharPix() {
   }
 }
 
+// Boleto
+const boletoAberto = ref(false)
+const boletoParcela = ref(null)
+const boletoCopiado = ref(false)
+const _boletoPendingIdx = ref(null)
 const BOLETO_CODIGO = '23793.38128 60007.827136 98000.063308 3 00000000000000'
 
 function pagarParcelaBoleto(idx) {
   boletoParcela.value = negotiation.value?.parcelas[idx] ?? null
   boletoAberto.value  = true
   pagandoIndex.value  = idx
-  // Simula a compensação do boleto: marca como paga ao fechar o modal
   _boletoPendingIdx.value = idx
 }
 
-// Fecha o modal de boleto e registra o pagamento (simula compensação)
-const _boletoPendingIdx = ref(null)
 function fecharBoleto() {
+  boletoAberto.value = false
+  _boletoPendingIdx.value = null
+}
+
+function confirmarBoletoPagamento() {
   const idx = _boletoPendingIdx.value
   boletoAberto.value = false
   _boletoPendingIdx.value = null
@@ -452,7 +471,7 @@ function baixarBoleto() {
                 {{ PIX_CHAVE }}
               </div>
               <div class="flex flex-col gap-2">
-                <button @click="fecharPix" class="btn-primary w-full text-sm">
+                <button @click="confirmarPixPagamento" class="btn-primary w-full text-sm">
                   Confirmar pagamento
                 </button>
                 <button @click="copiarPix" :class="pixCopiado ? 'btn-success' : 'btn-secondary'" class="w-full flex items-center justify-center gap-2 text-sm">
@@ -493,7 +512,7 @@ function baixarBoleto() {
                 {{ BOLETO_CODIGO }}
               </div>
               <div class="flex flex-col gap-2">
-                <button @click="fecharBoleto" class="btn-primary w-full text-sm">
+                <button @click="confirmarBoletoPagamento" class="btn-primary w-full text-sm">
                   Confirmar pagamento
                 </button>
                 <div class="flex gap-2">
