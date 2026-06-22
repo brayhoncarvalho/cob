@@ -68,6 +68,11 @@ const acordosAguardandoPagamento = computed(() =>
   negotiations.filter(n => n.status === 'em_pagamento' && !n.entradaPaga)
 )
 
+// Contrapropostas da mesa aguardando resposta do cliente
+const contrapropostasPendentes = computed(() =>
+  negotiations.filter(n => n.status === 'contraproposta')
+)
+
 function goToAtrasos() {
   if (primeiroContratoEmAtraso.value?.id) {
     router.push(`/contratos/${primeiroContratoEmAtraso.value.id}`)
@@ -137,7 +142,7 @@ function goToNegociacoes() {
           <div>
             <p class="font-bold text-sm">Acordo aprovado! Pague a entrada para ativar.</p>
             <p class="text-xs text-green-100 mt-0.5">
-              Contrato #{{ acordo.contratoId }} · Entrada: <strong class="text-white">{{ formatMoney(acordo.entrada) }}</strong> · {{ acordo.numParcelas }}x de {{ formatMoney(acordo.valorParcela) }}
+              Contrato #{{ acordo.contratoId }} &middot; Entrada: <strong class="text-white">{{ formatMoney(acordo.entrada) }}</strong> &middot; {{ acordo.numParcelas }}x de {{ formatMoney(acordo.valorParcela) }}
             </p>
             <p class="text-xs text-green-100 mt-0.5">Protocolo: <span class="font-mono">{{ acordo.id }}</span></p>
           </div>
@@ -147,6 +152,36 @@ function goToNegociacoes() {
           class="shrink-0 bg-white text-green-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-green-50 transition whitespace-nowrap shadow"
         >
           Pagar entrada
+        </RouterLink>
+      </div>
+    </div>
+
+    <!-- Banner: contraproposta da mesa aguardando resposta -->
+    <div
+      v-for="neg in contrapropostasPendentes"
+      :key="neg.id"
+      class="mb-4 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 text-white p-4 shadow-lg"
+    >
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/>
+            </svg>
+          </div>
+          <div>
+            <p class="font-bold text-sm">Contraproposta recebida!</p>
+            <p class="text-xs text-amber-100 mt-0.5">
+              Contrato #{{ neg.contratoId }} &middot; Nova entrada: <strong class="text-white">{{ formatMoney(neg.contraproposta?.entrada ?? neg.entrada) }}</strong> &middot; {{ neg.contraproposta?.numParcelas ?? neg.numParcelas }}x de {{ formatMoney(neg.contraproposta?.valorParcela ?? neg.valorParcela) }}
+            </p>
+            <p class="text-xs text-amber-100 mt-0.5">Protocolo: <span class="font-mono">{{ neg.id }}</span></p>
+          </div>
+        </div>
+        <RouterLink
+          :to="`/contratos/${neg.contratoId}`"
+          class="shrink-0 bg-white text-amber-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-amber-50 transition whitespace-nowrap shadow"
+        >
+          Ver proposta
         </RouterLink>
       </div>
     </div>
