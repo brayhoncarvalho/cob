@@ -16,11 +16,16 @@ const { rules } = useRules()
 
 const clienteId = computed(() => route.params.clienteId)
 
-// ── Proposta com acordo ativo (gerada pelo atendente nesta sessão) ────
+// IDs dos contratos do cliente — necessário para encontrar negociações sem clienteCpf
+const contratoIdsDoCliente = computed(() =>
+  flowState.contracts.map(c => c.id)
+)
+
+// ── Proposta com acordo ativo — busca por clienteCpf OU por contratoId do cliente ────
 const propostaPendente = computed(() =>
   flowState.negotiations.find(n =>
-    n.clienteCpf === clienteId.value &&
-    ['em_pagamento', 'em_analise', 'contraproposta'].includes(n.status)
+    ['em_pagamento', 'em_analise', 'contraproposta'].includes(n.status) &&
+    (n.clienteCpf === clienteId.value || contratoIdsDoCliente.value.includes(n.contratoId))
   ) ?? null
 )
 
