@@ -270,7 +270,7 @@ async function confirmar() {
 
             <button
               @click="confirmar"
-              :disabled="!decisao || loading || ((decisao === 'reprovar' || decisao === 'contraproposta') && !motivo.trim())"
+              :disabled="!decisao || loading"
               class="btn-primary w-full flex items-center justify-center gap-2"
             >
               <svg v-if="loading" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
