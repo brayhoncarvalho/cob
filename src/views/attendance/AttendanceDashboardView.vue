@@ -336,7 +336,18 @@ function initials(nome) {
               </svg>
               Ver proposta
             </button>
-            <!-- Sem proposta pendente: atendimento normal -->
+            <!-- Acordo ativo: mostra botão de acordo -->
+            <button
+              v-else-if="c.acordoAtivo > 0"
+              @click="iniciarAtendimento(c.cpf)"
+              class="text-sm py-2 px-4 whitespace-nowrap rounded-lg border-2 border-green-400 bg-green-50 text-green-700 hover:bg-green-100 font-medium transition-colors flex items-center gap-1.5"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Ver acordo
+            </button>
+            <!-- Sem proposta nem acordo: atendimento normal -->
             <button
               v-else
               @click="iniciarAtendimento(c.cpf)"
