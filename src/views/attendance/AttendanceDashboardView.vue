@@ -34,6 +34,8 @@ const clientesBase = computed(() =>
     const emAnalise       = negociacoes.filter(n => n.status === 'em_analise').length
     // Proposta do atendente aguardando mesa
     const emAnalisePorAtendente = negociacoes.filter(n => n.status === 'em_analise' && n.simuladoPorAtendente).length
+    // Acordos aprovados pela mesa aguardando pagamento da entrada
+    const acordoAguardandoPagamento = negociacoes.filter(n => n.status === 'em_pagamento' && !n.entradaPaga && n.simuladoPorAtendente)
 
     // Urgência: 0=ok, 1=em análise, 2=em atraso, 3=aguardando aprovação
     const urgencia = pendingApproval > 0 ? 3 : emAtraso > 0 ? 2 : emAnalise > 0 ? 1 : 0
@@ -46,6 +48,7 @@ const clientesBase = computed(() =>
       acordoAtivo,
       emAnalise,
       emAnalisePorAtendente,
+      acordoAguardandoPagamento,
       urgencia,
     }
   })
@@ -146,10 +149,46 @@ function initials(nome) {
   const parts = nome.trim().split(' ')
   return (parts[0][0] + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase()
 }
-</script>
+
+// Acordos aprovados pela mesa aguardando pagamento (visão global do atendente)
+const acordosAguardandoPagamentoGlobal = computed(() =>
+  flowState.negotiations.filter(n => n.status === 'em_pagamento' && !n.entradaPaga && n.simuladoPorAtendente)
+)</script>
 
 <template>
   <AttendanceLayout title="">
+
+    <!-- Banners: acordos aprovados pela mesa aguardando pagamento da entrada -->
+    <div
+      v-for="acordo in acordosAguardandoPagamentoGlobal"
+      :key="acordo.id"
+      class="mb-4 rounded-2xl bg-gradient-to-r from-green-600 to-emerald-500 text-white p-4 shadow-lg"
+    >
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="font-bold text-sm">Acordo aprovado pela Mesa de Crédito!</p>
+            <p class="text-xs text-green-100 mt-0.5">
+              Contrato #{{ acordo.contratoId }} · Entrada: <strong class="text-white">{{ formatMoney(acordo.entrada) }}</strong> · {{ acordo.numParcelas }}x de {{ formatMoney(acordo.valorParcela) }}
+            </p>
+            <p class="text-xs text-green-100 mt-0.5">
+              CPF: <span class="font-mono text-white">{{ acordo.clienteCpf }}</span> · Protocolo: <span class="font-mono">{{ acordo.id }}</span>
+            </p>
+          </div>
+        </div>
+        <button
+          @click="iniciarAtendimento(acordo.clienteCpf)"
+          class="shrink-0 bg-white text-green-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-green-50 transition whitespace-nowrap shadow"
+        >
+          Ver cliente
+        </button>
+      </div>
+    </div>
 
     <!-- ── Métricas clicáveis ──────────────────────────────────────────── -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">

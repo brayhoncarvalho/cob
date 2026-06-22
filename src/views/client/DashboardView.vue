@@ -63,6 +63,11 @@ const propostasAtendente = computed(() =>
   negotiations.filter(n => n.status === 'pending_client_approval')
 )
 
+// Acordos aprovados pela mesa aguardando pagamento da entrada
+const acordosAguardandoPagamento = computed(() =>
+  negotiations.filter(n => n.status === 'em_pagamento' && !n.entradaPaga)
+)
+
 function goToAtrasos() {
   if (primeiroContratoEmAtraso.value?.id) {
     router.push(`/contratos/${primeiroContratoEmAtraso.value.id}`)
@@ -114,6 +119,36 @@ function goToNegociacoes() {
       >
         Ver oferta
       </RouterLink>
+    </div>
+
+    <!-- Banner: acordo aprovado aguardando pagamento da entrada -->
+    <div
+      v-for="acordo in acordosAguardandoPagamento"
+      :key="acordo.id"
+      class="mb-4 rounded-2xl bg-gradient-to-r from-green-600 to-emerald-500 text-white p-4 shadow-lg"
+    >
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="font-bold text-sm">Acordo aprovado! Pague a entrada para ativar.</p>
+            <p class="text-xs text-green-100 mt-0.5">
+              Contrato #{{ acordo.contratoId }} · Entrada: <strong class="text-white">{{ formatMoney(acordo.entrada) }}</strong> · {{ acordo.numParcelas }}x de {{ formatMoney(acordo.valorParcela) }}
+            </p>
+            <p class="text-xs text-green-100 mt-0.5">Protocolo: <span class="font-mono">{{ acordo.id }}</span></p>
+          </div>
+        </div>
+        <RouterLink
+          :to="`/contratos/${acordo.contratoId}/pagar`"
+          class="shrink-0 bg-white text-green-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-green-50 transition whitespace-nowrap shadow"
+        >
+          Pagar entrada
+        </RouterLink>
+      </div>
     </div>
 
     <!-- Banner de atraso -->
