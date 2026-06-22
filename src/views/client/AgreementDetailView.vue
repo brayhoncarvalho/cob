@@ -9,11 +9,15 @@ import { useFlow } from '@/stores/flow.js'
 const route = useRoute()
 const { formatMoney, formatDate, formatDateTime } = useFormatters()
 const router = useRouter()
-const { state: flowState, markParcelaPaid, clientCancelNegotiation } = useFlow()
+const { state: flowState, markParcelaPaid, clientCancelNegotiation, acceptCounter } = useFlow()
 
 function cancelarProposta() {
   clientCancelNegotiation(negotiation.value.id)
   router.push('/negociacoes')
+}
+
+function aceitarContraproposta() {
+  acceptCounter(negotiation.value.id)
 }
 
 const negotiation = computed(() => flowState.negotiations.find(n => n.id === route.params.id))
@@ -272,16 +276,38 @@ function baixarBoleto() {
             class="shrink-0 btn-danger text-xs py-1 px-3"
           >Cancelar proposta</button>
         </div>
-        <div v-if="negotiation.status === 'contraproposta'" class="mt-4 rounded-xl bg-amber-50 border border-amber-500/25 px-4 py-3 text-xs flex items-start justify-between gap-3">
-          <div class="flex items-start gap-1.5">
-            <svg class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
-            <span class="text-amber-800">A Mesa de Crédito enviou uma contraproposta. Avalie as novas condições antes do prazo.</span>
+        <div v-if="negotiation.status === 'contraproposta'" class="mt-4 rounded-2xl bg-amber-50 border-2 border-amber-400 px-5 py-4">
+          <div class="flex items-center gap-2 mb-2">
+            <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
+            <p class="font-bold text-amber-800 text-sm">Contraproposta recebida!</p>
           </div>
-          <button
-            type="button"
-            @click="cancelarProposta"
-            class="shrink-0 btn-danger text-xs py-1 px-3"
-          >Cancelar proposta</button>
+          <p class="text-xs text-amber-700 mb-3">A Mesa de Crédito enviou novas condições. Avalie e decida antes do prazo expirar.</p>
+          <div class="bg-white rounded-xl px-4 py-3 space-y-1.5 text-xs mb-4 border border-amber-200">
+            <div class="flex justify-between">
+              <span class="text-gray-500">Nova entrada</span>
+              <span class="font-bold text-amber-700">{{ formatMoney(negotiation.contraproposta?.entrada ?? negotiation.entrada) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">Parcelas</span>
+              <span class="font-medium">{{ negotiation.contraproposta?.numParcelas ?? negotiation.numParcelas }}x de {{ formatMoney(negotiation.contraproposta?.valorParcela ?? negotiation.valorParcela) }}</span>
+            </div>
+            <div class="flex justify-between border-t pt-1.5">
+              <span class="font-semibold text-gray-700">Total</span>
+              <span class="font-bold">{{ formatMoney(negotiation.contraproposta?.total ?? negotiation.totalAcordo) }}</span>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              @click="aceitarContraproposta"
+              class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold text-sm rounded-xl py-2.5 transition-colors"
+            >Aceitar proposta</button>
+            <button
+              type="button"
+              @click="cancelarProposta"
+              class="flex-1 border-2 border-red-400 text-red-600 hover:bg-red-50 font-semibold text-sm rounded-xl py-2.5 transition-colors"
+            >Recusar</button>
+          </div>
         </div>
         <div v-if="negotiation.status === 'reprovada'" class="alert-danger mt-4 text-xs flex items-start gap-1.5">
           <svg class="w-4 h-4 text-red-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
