@@ -62,17 +62,28 @@ const txRecuperacao = computed(() =>
 )
 const metaPct = computed(() => Math.round((rules.metaRecuperacaoPct ?? 0.80) * 100))
 
-// Acordos ativos para monitoramento
+// Acordos em andamento (pagando parcelas)
 const acordosAtivos = computed(() =>
   flowState.negotiations
-    .filter(n => n.status === 'em_pagamento' || n.status === 'quitado')
+    .filter(n => n.status === 'em_pagamento')
     .map(n => ({
       ...n,
       contrato: flowState.contracts.find(c => c.id === n.contratoId),
       parcelasPagas: n.parcelas?.filter(p => p.status === 'paga').length ?? 0,
       parcelasTotal: n.parcelas?.length ?? 0,
     }))
-    .sort((a, b) => (a.status === 'quitado' ? 1 : -1))
+)
+
+// Acordos já quitados (histórico)
+const acordosQuitados = computed(() =>
+  flowState.negotiations
+    .filter(n => n.status === 'quitado')
+    .map(n => ({
+      ...n,
+      contrato: flowState.contracts.find(c => c.id === n.contratoId),
+      parcelasPagas: n.parcelas?.filter(p => p.status === 'paga').length ?? 0,
+      parcelasTotal: n.parcelas?.length ?? 0,
+    }))
 )
 </script>
 
@@ -159,7 +170,7 @@ const acordosAtivos = computed(() =>
     <div v-if="acordosAtivos.length > 0" class="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6">
       <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
         <h2 class="font-semibold text-gray-900">Acordos em andamento</h2>
-        <span class="text-xs bg-blue-50 text-blue-600 font-semibold px-2.5 py-1 rounded-full">{{ acordosAtivos.filter(a => a.status === 'em_pagamento').length }} ativos</span>
+        <span class="text-xs bg-blue-50 text-blue-600 font-semibold px-2.5 py-1 rounded-full">{{ acordosAtivos.length }} ativos</span>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm min-w-[600px]">
@@ -196,12 +207,42 @@ const acordosAtivos = computed(() =>
                 </div>
               </td>
               <td class="px-4 py-3">
-                <span :class="item.status === 'quitado' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'" class="text-xs font-semibold px-2 py-0.5 rounded-full">
-                  {{ item.status === 'quitado' ? 'Quitado' : 'Em pagamento' }}
-                </span>
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Em pagamento</span>
               </td>
               <td class="px-6 py-3 text-right">
                 <button @click.stop="router.push(`/backoffice/gerente/proposta/${item.id}`)" class="text-sm font-semibold text-blue-600 hover:text-blue-800">Ver acordo →</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Acordos quitados (histórico) -->
+    <div v-if="acordosQuitados.length > 0" class="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h2 class="font-semibold text-gray-900">Acordos quitados</h2>
+        <span class="text-xs bg-green-50 text-green-600 font-semibold px-2.5 py-1 rounded-full">{{ acordosQuitados.length }} concluído{{ acordosQuitados.length > 1 ? 's' : '' }}</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm min-w-[600px]">
+          <thead class="bg-gray-50">
+            <tr class="text-xs text-gray-500">
+              <th class="text-left px-6 py-3 font-medium">Protocolo</th>
+              <th class="text-left px-4 py-3 font-medium">Contrato</th>
+              <th class="text-right px-4 py-3 font-medium">Total do acordo</th>
+              <th class="text-center px-4 py-3 font-medium">Parcelas</th>
+              <th class="text-right px-6 py-3 font-medium">Ação</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            <tr v-for="item in acordosQuitados" :key="item.id" class="hover:bg-gray-50 cursor-pointer" @click="router.push(`/backoffice/gerente/proposta/${item.id}`)">
+              <td class="px-6 py-3 font-mono text-sm text-gray-900">{{ item.id }}</td>
+              <td class="px-4 py-3 font-mono text-gray-700">#{{ item.contratoId }}</td>
+              <td class="px-4 py-3 text-right font-semibold text-gray-700">{{ formatMoney(item.totalAcordo) }}</td>
+              <td class="px-4 py-3 text-center text-xs text-gray-500">{{ item.parcelasPagas }}/{{ item.parcelasTotal }} pagas</td>
+              <td class="px-6 py-3 text-right">
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Quitado</span>
               </td>
             </tr>
           </tbody>
