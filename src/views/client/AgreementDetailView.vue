@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
@@ -61,38 +61,58 @@ function pagarParcela(idx) {
   }, 1200)
 }
 
-// ── Pagamento: modal Pix/Boleto ───────────────────────────────────────────────
-const modalPagamento = ref(false)
-const modalIdxParcela = ref(null)        // índice da parcela selecionada (null = próxima vencida)
-const metodoPagamento = ref(null)        // 'pix' | 'boleto'
+// ── Seleção inline de parcelas ───────────────────────────────────────────────
+const parcelasSelecionadas = ref(new Set())   // Set de índices
 
-// Auto-open payment modal via ?pagar=1 query param
+const parcelasDisponiveis = computed(() =>
+  (negotiation.value?.parcelas ?? [])
+    .map((p, idx) => ({ ...p, idx }))
+    .filter(p => p.status === 'proxima' || p.status === 'futura')
+)
+
+const totalSelecionado = computed(() =>
+  [...parcelasSelecionadas.value].reduce((s, idx) =>
+    s + (negotiation.value?.parcelas[idx]?.valor ?? 0), 0)
+)
+
+watch(negotiation, neg => {
+  if (!neg) return
+  const proxIdx = neg.parcelas?.findIndex(p => p.status === 'proxima') ?? -1
+  parcelasSelecionadas.value = new Set(proxIdx >= 0 ? [proxIdx] : [])
+}, { immediate: true })
+
+function toggleParcela(idx) {
+  const s = new Set(parcelasSelecionadas.value)
+  s.has(idx) ? s.delete(idx) : s.add(idx)
+  parcelasSelecionadas.value = s
+}
+
+// ── Modal de método de pagamento (Pix / Boleto) ───────────────────────────────
+const modalMetodo    = ref(false)
+const metodoPagamento = ref(null)
+
 onMounted(() => {
-  if (route.query.pagar === '1' && negotiation.value?.status === 'em_pagamento') {
-    abrirModalPagamento()
-  }
+  // ?pagar=1 não precisa mais abrir modal — a seleção já está inline
 })
 
-function abrirModalPagamento(idx = null) {
-  modalIdxParcela.value = idx
+function abrirModalMetodo() {
   metodoPagamento.value = null
-  modalPagamento.value  = true
+  modalMetodo.value = true
 }
 
 function confirmarPagamento() {
-  const idx = modalIdxParcela.value ?? negotiation.value?.parcelas.findIndex(
-    p => p.status === 'proxima' || p.status === 'futura'
-  )
-  if (idx == null || idx < 0) return
+  const idxList = [...parcelasSelecionadas.value].sort((a, b) => a - b)
+  if (!idxList.length || !metodoPagamento.value) return
   if (metodoPagamento.value === 'pix') {
-    pixParcela.value = negotiation.value?.parcelas[idx] ?? null
-    _pixPendingIdx.value = idx
+    pixParcela.value = negotiation.value?.parcelas[idxList[0]] ?? null
+    _pixPendingIdx.value = idxList
     pixAberto.value = true
-    modalPagamento.value = false
+    modalMetodo.value = false
   } else if (metodoPagamento.value === 'boleto') {
-    boletoAberto.value  = true
-    pagarParcelaBoleto(idx)
-    modalPagamento.value = false
+    boletoParcela.value = negotiation.value?.parcelas[idxList[0]] ?? null
+    _boletoPendingIdx.value = idxList
+    boletoAberto.value = true
+    modalMetodo.value = false
   }
 }
 
@@ -115,11 +135,11 @@ function fecharPix() {
 }
 
 function confirmarPixPagamento() {
-  const idx = _pixPendingIdx.value
+  const idxList = _pixPendingIdx.value ?? []
   pixAberto.value = false
   _pixPendingIdx.value = null
-  if (idx !== null) {
-    markParcelaPaid(negotiation.value.id, idx)
+  if (idxList.length) {
+    idxList.forEach(idx => markParcelaPaid(negotiation.value.id, idx))
     pagandoIndex.value = null
     pagamentoConfirmado.value = true
   }
@@ -132,24 +152,17 @@ const boletoCopiado = ref(false)
 const _boletoPendingIdx = ref(null)
 const BOLETO_CODIGO = '23793.38128 60007.827136 98000.063308 3 00000000000000'
 
-function pagarParcelaBoleto(idx) {
-  boletoParcela.value = negotiation.value?.parcelas[idx] ?? null
-  boletoAberto.value  = true
-  pagandoIndex.value  = idx
-  _boletoPendingIdx.value = idx
-}
-
 function fecharBoleto() {
   boletoAberto.value = false
   _boletoPendingIdx.value = null
 }
 
 function confirmarBoletoPagamento() {
-  const idx = _boletoPendingIdx.value
+  const idxList = _boletoPendingIdx.value ?? []
   boletoAberto.value = false
   _boletoPendingIdx.value = null
-  if (idx !== null) {
-    markParcelaPaid(negotiation.value.id, idx)
+  if (idxList.length) {
+    idxList.forEach(idx => markParcelaPaid(negotiation.value.id, idx))
     pagandoIndex.value = null
     pagamentoConfirmado.value = true
   }
@@ -347,20 +360,75 @@ function baixarBoleto() {
         </div>
       </div>
 
-      <!-- Parcelas do acordo (se em pagamento) -->
+      <!-- Parcelas do acordo (selecionáveis para pagamento) -->
       <div v-if="negotiation.parcelas?.length" class="card mb-6">
-        <div class="flex items-center justify-between gap-3 mb-4">
-          <h3 class="font-semibold text-gray-900">Parcelas do acordo</h3>
-
-          <!-- Ações de pagamento -->
-          <div v-if="negotiation.status === 'em_pagamento'">
-            <button @click="abrirModalPagamento()" class="btn-primary flex items-center gap-2 text-sm py-1.5 px-3">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/></svg>
-              Pagar Próxima
-            </button>
+        <div class="flex items-center justify-between mb-1">
+          <div>
+            <h3 class="font-semibold text-gray-900">Parcelas do acordo</h3>
+            <p v-if="negotiation.status === 'em_pagamento' && parcelasDisponiveis.length" class="text-xs text-gray-400 mt-0.5">Selecione as que deseja pagar</p>
+          </div>
+          <div v-if="negotiation.status === 'em_pagamento' && parcelasDisponiveis.length > 1" class="flex gap-3 text-xs">
+            <button @click="parcelasSelecionadas = new Set(parcelasDisponiveis.map(p => p.idx))" class="text-blue-600 hover:underline font-medium">Selecionar todas</button>
+            <button @click="parcelasSelecionadas = new Set()" class="text-gray-400 hover:underline">Limpar</button>
           </div>
         </div>
 
+        <!-- Parcelas pendentes: selecionáveis -->
+        <div v-if="negotiation.status === 'em_pagamento' && parcelasDisponiveis.length" class="divide-y divide-gray-100 -mx-6 overflow-hidden mb-4">
+          <button
+            v-for="p in parcelasDisponiveis"
+            :key="p.idx"
+            type="button"
+            @click="toggleParcela(p.idx)"
+            :aria-pressed="parcelasSelecionadas.has(p.idx)"
+            class="w-full flex items-center gap-3 px-6 py-3.5 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+            :class="parcelasSelecionadas.has(p.idx) ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'"
+          >
+            <div
+              class="shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all"
+              :class="parcelasSelecionadas.has(p.idx) ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'"
+            >
+              <svg v-if="parcelasSelecionadas.has(p.idx)" class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+            </div>
+            <span class="text-xs font-mono text-gray-400 w-8 shrink-0">{{ p.tipo === 'entrada' ? 'E' : p.numero }}</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-800">
+                {{ p.status === 'proxima' ? 'Próxima —' : 'Antecipada —' }} vence em {{ formatDate(p.vencimento) }}
+              </p>
+              <p v-if="p.status === 'futura'" class="text-xs text-amber-600">Pagamento antecipado</p>
+            </div>
+            <div class="text-right shrink-0">
+              <p class="font-semibold" :class="parcelasSelecionadas.has(p.idx) ? 'text-blue-800' : 'text-gray-800'">{{ formatMoney(p.valor) }}</p>
+            </div>
+            <StatusBadge :status="p.status" small />
+          </button>
+        </div>
+
+        <!-- Barra de pagamento flutuante -->
+        <Transition
+          enter-active-class="transition-all duration-200 ease-out"
+          enter-from-class="opacity-0 -translate-y-1"
+          enter-to-class="opacity-100 translate-y-0"
+          leave-active-class="transition-all duration-150"
+          leave-to-class="opacity-0"
+        >
+          <div v-if="negotiation.status === 'em_pagamento' && parcelasSelecionadas.size > 0" class="mt-1 bg-blue-600 rounded-xl px-4 py-3.5 flex flex-wrap items-center justify-between gap-3 mb-4">
+            <p class="text-sm text-white font-semibold">
+              {{ parcelasSelecionadas.size }} parcela{{ parcelasSelecionadas.size > 1 ? 's' : '' }} selecionada{{ parcelasSelecionadas.size > 1 ? 's' : '' }}
+            </p>
+            <div class="flex items-center gap-3">
+              <span class="text-xl font-bold text-white">{{ formatMoney(totalSelecionado) }}</span>
+              <button
+                @click="abrirModalMetodo"
+                class="bg-white text-blue-700 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors whitespace-nowrap"
+              >
+                Pagar
+              </button>
+            </div>
+          </div>
+        </Transition>
+
+        <!-- Extrato completo: todas as parcelas (leitura) -->
         <div class="overflow-x-auto -mx-6 px-6">
           <table class="w-full text-sm min-w-[480px]">
             <thead>
@@ -370,34 +438,23 @@ function baixarBoleto() {
                 <th class="text-left py-2 font-medium">Vencimento</th>
                 <th class="text-right py-2 font-medium">Valor</th>
                 <th class="text-center py-2 font-medium">Status</th>
-                <th class="text-right py-2 font-medium">Ação</th>
+                <th class="text-right py-2 font-medium">Pgto.</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
               <tr
                 v-for="(p, idx) in negotiation.parcelas"
                 :key="p.numero"
-                :class="p.status === 'proxima' ? 'bg-blue-100' : ''"
+                :class="p.status === 'proxima' ? 'bg-blue-50' : ''"
               >
-                <td class="py-2.5 text-xs font-mono text-gray-400">{{ p.numero }}</td>
+                <td class="py-2.5 text-xs font-mono text-gray-400">{{ p.tipo === 'entrada' ? 'E' : p.numero }}</td>
                 <td class="py-2.5 text-xs text-gray-500 capitalize">{{ p.tipo }}</td>
                 <td class="py-2.5">{{ formatDate(p.vencimento) }}</td>
                 <td class="py-2.5 text-right font-semibold">{{ formatMoney(p.valor) }}</td>
                 <td class="py-2.5 text-center">
                   <StatusBadge :status="p.status" small />
                 </td>
-                <td class="py-2.5 text-right">
-                  <template v-if="p.status === 'proxima' || p.status === 'futura'">
-                    <button
-                      @click="abrirModalPagamento(idx)"
-                      :disabled="pagandoIndex === idx"
-                      class="text-xs font-semibold text-blue-600 hover:underline disabled:opacity-50"
-                    >
-                      {{ pagandoIndex === idx ? '...' : 'Pagar' }}
-                    </button>
-                  </template>
-                  <span v-else class="text-xs text-gray-300">—</span>
-                </td>
+                <td class="py-2.5 text-right text-xs text-gray-400">{{ p.dataPagamento ? formatDate(p.dataPagamento) : '—' }}</td>
               </tr>
             </tbody>
           </table>
@@ -407,10 +464,13 @@ function baixarBoleto() {
       <!-- Modal: escolha de método de pagamento -->
       <Teleport to="body">
         <Transition enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0" leave-active-class="transition-opacity duration-200" leave-to-class="opacity-0">
-          <div v-if="modalPagamento" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 pb-4 sm:pb-0" role="dialog" aria-modal="true" aria-labelledby="modal-pag-title">
+          <div v-if="modalMetodo" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 pb-4 sm:pb-0" role="dialog" aria-modal="true" aria-labelledby="modal-pag-title">
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-              <h3 id="modal-pag-title" class="text-base font-semibold text-gray-900 mb-1">Escolha a forma de pagamento</h3>
-              <p class="text-sm text-gray-500 mb-4">Como você prefere pagar esta parcela?</p>
+              <h3 id="modal-pag-title" class="text-base font-semibold text-gray-900 mb-1">Forma de pagamento</h3>
+              <p class="text-sm text-gray-500 mb-4">
+                <template v-if="parcelasSelecionadas.size > 1">{{ parcelasSelecionadas.size }} parcelas &bull; Total: <strong>{{ formatMoney(totalSelecionado) }}</strong></template>
+                <template v-else>Como você prefere pagar esta parcela?</template>
+              </p>
               <div class="grid grid-cols-2 gap-3 mb-5">
                 <button
                   @click="metodoPagamento = 'pix'"
@@ -432,7 +492,7 @@ function baixarBoleto() {
                 </button>
               </div>
               <div class="flex gap-3">
-                <button @click="modalPagamento = false" class="btn-secondary flex-1">Cancelar</button>
+                <button @click="modalMetodo = false" class="btn-secondary flex-1">Cancelar</button>
                 <button @click="confirmarPagamento" :disabled="!metodoPagamento" class="btn-primary flex-1 disabled:opacity-40">
                   Continuar
                 </button>
@@ -456,7 +516,15 @@ function baixarBoleto() {
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </div>
-              <p class="text-xs text-gray-500 mb-4">Vencimento: {{ formatDate(pixParcela.vencimento) }} &bull; Valor: <strong>{{ formatMoney(pixParcela.valor) }}</strong></p>
+              <p class="text-xs text-gray-500 mb-4">
+                <template v-if="(_pixPendingIdx ?? []).length > 1">
+                  {{ (_pixPendingIdx ?? []).length }} parcelas antecipadas &bull;
+                  Total: <strong>{{ formatMoney((_pixPendingIdx ?? []).reduce((s, i) => s + (negotiation?.parcelas[i]?.valor ?? 0), 0)) }}</strong>
+                </template>
+                <template v-else>
+                  Vencimento: {{ formatDate(pixParcela?.vencimento) }} &bull; Valor: <strong>{{ formatMoney(pixParcela?.valor) }}</strong>
+                </template>
+              </p>
               <!-- QR Code mockado -->
               <div class="bg-gray-50 rounded-xl p-4 mb-3 flex justify-center">
                 <div class="w-32 h-32 grid grid-cols-8 gap-px" aria-hidden="true">
@@ -498,7 +566,15 @@ function baixarBoleto() {
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </div>
-              <p class="text-xs text-gray-500 mb-4">Vencimento: {{ formatDate(boletoParcela.vencimento) }} &bull; Valor: <strong>{{ formatMoney(boletoParcela.valor) }}</strong></p>
+              <p class="text-xs text-gray-500 mb-4">
+                <template v-if="(_boletoPendingIdx ?? []).length > 1">
+                  {{ (_boletoPendingIdx ?? []).length }} parcelas antecipadas &bull;
+                  Total: <strong>{{ formatMoney((_boletoPendingIdx ?? []).reduce((s, i) => s + (negotiation?.parcelas[i]?.valor ?? 0), 0)) }}</strong>
+                </template>
+                <template v-else>
+                  Vencimento: {{ formatDate(boletoParcela?.vencimento) }} &bull; Valor: <strong>{{ formatMoney(boletoParcela?.valor) }}</strong>
+                </template>
+              </p>
               <!-- Código de barras visual (mockado) -->
               <div class="bg-gray-50 rounded-xl p-3 mb-3 flex justify-center">
                 <div class="flex items-end gap-px h-12" aria-hidden="true">
