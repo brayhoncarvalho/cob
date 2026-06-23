@@ -361,7 +361,34 @@ function baixarBoleto() {
       </div>
 
       <!-- Parcelas do acordo (selecionáveis para pagamento) -->
-      <div v-if="negotiation.parcelas?.length" class="card mb-6">
+      <div v-if="negotiation.parcelas?.length" class="mb-6">
+
+        <!-- Barra de pagamento (topo) -->
+        <Transition
+          enter-active-class="transition-all duration-200 ease-out"
+          enter-from-class="opacity-0 -translate-y-1"
+          enter-to-class="opacity-100 translate-y-0"
+          leave-active-class="transition-all duration-150"
+          leave-to-class="opacity-0"
+        >
+          <div v-if="negotiation.status === 'em_pagamento' && parcelasSelecionadas.size > 0" class="bg-blue-600 rounded-xl px-4 py-3.5 flex flex-wrap items-center justify-between gap-3 mb-4">
+            <p class="text-sm text-white font-semibold">
+              {{ parcelasSelecionadas.size }} parcela{{ parcelasSelecionadas.size > 1 ? 's' : '' }} selecionada{{ parcelasSelecionadas.size > 1 ? 's' : '' }}
+            </p>
+            <div class="flex items-center gap-3">
+              <span class="text-xl font-bold text-white">{{ formatMoney(totalSelecionado) }}</span>
+              <button
+                @click="abrirModalMetodo"
+                class="bg-white text-blue-700 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors whitespace-nowrap"
+              >
+                Pagar
+              </button>
+            </div>
+          </div>
+        </Transition>
+
+        <!-- Card: Parcelas do acordo -->
+        <div class="card mb-4">
         <div class="flex items-center justify-between mb-1">
           <div>
             <h3 class="font-semibold text-gray-900">Parcelas do acordo</h3>
@@ -374,7 +401,7 @@ function baixarBoleto() {
         </div>
 
         <!-- Parcelas pendentes: selecionáveis -->
-        <div v-if="negotiation.status === 'em_pagamento' && parcelasDisponiveis.length" class="divide-y divide-gray-100 -mx-6 overflow-hidden mb-4">
+        <div v-if="negotiation.status === 'em_pagamento' && parcelasDisponiveis.length" class="divide-y divide-gray-100 -mx-6 overflow-hidden">
           <button
             v-for="p in parcelasDisponiveis"
             :key="p.idx"
@@ -403,32 +430,11 @@ function baixarBoleto() {
             <StatusBadge :status="p.status" small />
           </button>
         </div>
+        </div>
 
-        <!-- Barra de pagamento flutuante -->
-        <Transition
-          enter-active-class="transition-all duration-200 ease-out"
-          enter-from-class="opacity-0 -translate-y-1"
-          enter-to-class="opacity-100 translate-y-0"
-          leave-active-class="transition-all duration-150"
-          leave-to-class="opacity-0"
-        >
-          <div v-if="negotiation.status === 'em_pagamento' && parcelasSelecionadas.size > 0" class="mt-1 bg-blue-600 rounded-xl px-4 py-3.5 flex flex-wrap items-center justify-between gap-3 mb-4">
-            <p class="text-sm text-white font-semibold">
-              {{ parcelasSelecionadas.size }} parcela{{ parcelasSelecionadas.size > 1 ? 's' : '' }} selecionada{{ parcelasSelecionadas.size > 1 ? 's' : '' }}
-            </p>
-            <div class="flex items-center gap-3">
-              <span class="text-xl font-bold text-white">{{ formatMoney(totalSelecionado) }}</span>
-              <button
-                @click="abrirModalMetodo"
-                class="bg-white text-blue-700 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors whitespace-nowrap"
-              >
-                Pagar
-              </button>
-            </div>
-          </div>
-        </Transition>
-
-        <!-- Extrato completo: todas as parcelas (leitura) -->
+        <!-- Card: Extrato completo -->
+        <div class="card">
+        <h3 class="font-semibold text-gray-900 mb-3">Extrato completo</h3>
         <div class="overflow-x-auto -mx-6 px-6">
           <table class="w-full text-sm min-w-[480px]">
             <thead>
@@ -458,6 +464,7 @@ function baixarBoleto() {
               </tr>
             </tbody>
           </table>
+        </div>
         </div>
       </div>
 

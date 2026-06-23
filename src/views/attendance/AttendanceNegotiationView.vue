@@ -560,6 +560,30 @@ function confirmPayment() {
                 </div>
               </div>
 
+              <!-- Barra de pagamento (topo) -->
+              <Transition
+                enter-active-class="transition-all duration-200 ease-out"
+                enter-from-class="opacity-0 -translate-y-1"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition-all duration-150"
+                leave-to-class="opacity-0"
+              >
+                <div v-if="parcelasSelecionadas.size > 0" class="mb-3 bg-blue-600 rounded-xl px-4 py-3.5 flex flex-wrap items-center justify-between gap-3">
+                  <p class="text-sm text-white font-semibold">
+                    {{ parcelasSelecionadas.size }} {{ propostaPendente.entradaPaga ? 'parcela' + (parcelasSelecionadas.size > 1 ? 's' : '') + ' selecionada' + (parcelasSelecionadas.size > 1 ? 's' : '') : 'entrada selecionada' }}
+                  </p>
+                  <div class="flex items-center gap-3">
+                    <span class="text-xl font-bold text-white">{{ formatMoney(totalSelecionado) }}</span>
+                    <button
+                      @click="abrirModalPagamento()"
+                      class="bg-white text-blue-700 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors whitespace-nowrap"
+                    >
+                      {{ propostaPendente.entradaPaga ? 'Pagar Fatura' : 'Pagar Entrada' }}
+                    </button>
+                  </div>
+                </div>
+              </Transition>
+
               <!-- Lista selecionável de parcelas pendentes -->
               <div v-if="parcelasDisponiveis.length" class="divide-y divide-gray-100 -mx-6 overflow-hidden mb-3">
                 <button
@@ -588,32 +612,12 @@ function confirmPayment() {
                   <p class="font-semibold shrink-0" :class="parcelasSelecionadas.has(p.idx) ? 'text-blue-800' : 'text-gray-800'">{{ formatMoney(p.valor) }}</p>
                 </button>
               </div>
+            </div>
+          </div>
 
-              <!-- Barra de pagamento flutuante -->
-              <Transition
-                enter-active-class="transition-all duration-200 ease-out"
-                enter-from-class="opacity-0 -translate-y-1"
-                enter-to-class="opacity-100 translate-y-0"
-                leave-active-class="transition-all duration-150"
-                leave-to-class="opacity-0"
-              >
-                <div v-if="parcelasSelecionadas.size > 0" class="mb-4 bg-blue-600 rounded-xl px-4 py-3.5 flex flex-wrap items-center justify-between gap-3">
-                  <p class="text-sm text-white font-semibold">
-                    {{ parcelasSelecionadas.size }} {{ propostaPendente.entradaPaga ? 'parcela' + (parcelasSelecionadas.size > 1 ? 's' : '') + ' selecionada' + (parcelasSelecionadas.size > 1 ? 's' : '') : 'entrada selecionada' }}
-                  </p>
-                  <div class="flex items-center gap-3">
-                    <span class="text-xl font-bold text-white">{{ formatMoney(totalSelecionado) }}</span>
-                    <button
-                      @click="abrirModalPagamento()"
-                      class="bg-white text-blue-700 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors whitespace-nowrap"
-                    >
-                      {{ propostaPendente.entradaPaga ? 'Pagar Fatura' : 'Pagar Entrada' }}
-                    </button>
-                  </div>
-                </div>
-              </Transition>
-
-              <p class="text-xs font-semibold text-gray-500 mb-2">Extrato completo</p>
+          <!-- Card: Extrato completo -->
+          <div class="card mb-5">
+              <h3 class="font-semibold text-gray-800 text-sm mb-2">Extrato completo</h3>
               <div class="overflow-x-auto -mx-1">
                 <table class="w-full text-xs min-w-[320px]">
                   <thead>
@@ -652,7 +656,6 @@ function confirmPayment() {
                   </tbody>
                 </table>
               </div>
-            </div>
           </div>
 
           <div class="space-y-3">
