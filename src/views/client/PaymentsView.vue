@@ -20,6 +20,7 @@ const parcelasEmAtraso = computed(() => {
   const items = []
   contracts.forEach(c => {
     if (contratoComAcordo.value.has(c.id)) return
+    if (c.status === 'quitado') return
     c.parcelas.filter(p => p.status === 'vencida').forEach(p => {
       items.push({
         sourceType: 'contrato',
@@ -73,6 +74,7 @@ const proximosVencimentos = computed(() => {
   const items = []
   contracts.forEach(c => {
     if (contratoComAcordo.value.has(c.id)) return
+    if (c.status === 'quitado') return
     c.parcelas.filter(p => p.status === 'proxima').forEach(p => {
       items.push({
         sourceType: 'contrato',
