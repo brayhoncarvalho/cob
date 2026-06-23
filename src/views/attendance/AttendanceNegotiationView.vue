@@ -305,6 +305,14 @@ function confirmarPixAtt() {
   }
 }
 
+// Fecha o modal de confirmação — se o acordo foi quitado, volta ao painel
+function fecharConfirmacaoParcela() {
+  pagamentoConfirmadoParcela.value = false
+  if (!propostaPendente.value || propostaPendente.value.status === 'quitado') {
+    router.push('/atendimento')
+  }
+}
+
 // Boleto
 const boletoAbertoAtt      = ref(false)
 const boletoCopiado        = ref(false)
@@ -1054,7 +1062,7 @@ function confirmPayment() {
           <svg class="w-14 h-14 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           <h3 class="text-lg font-bold text-gray-900 mb-1">Pagamento registrado!</h3>
           <p class="text-sm text-gray-500 mb-6">Parcela confirmada com sucesso.</p>
-          <button @click="pagamentoConfirmadoParcela = false" class="btn-primary w-full">Fechar</button>
+          <button @click="fecharConfirmacaoParcela" class="btn-primary w-full">Fechar</button>
         </div>
       </div>
     </Transition>
