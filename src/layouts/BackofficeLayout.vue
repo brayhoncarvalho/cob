@@ -78,7 +78,7 @@ defineProps({
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-100">
+  <div class="min-h-screen bg-gray-50">
     <!-- Header -->
     <header class="bg-gray-900 text-white sticky top-0 z-40">
       <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">

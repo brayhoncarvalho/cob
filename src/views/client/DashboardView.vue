@@ -204,10 +204,10 @@ function goToNegociacoes() {
       </div>
     </div>
 
-    <!-- Saudação -->
+    <!-- Saudação
     <div class="mb-6">
       <h1 class="text-2xl font-bold text-gray-900">Olá, {{ state.user?.nome?.split(' ')[0] }}</h1>
-    </div>
+    </div> -->
 
     <!-- Cards de métricas -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
