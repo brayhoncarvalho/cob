@@ -86,6 +86,16 @@ const state = reactive(loadState() ?? freshState())
       }
     }
   })
+  // Corrigir negociações em_pagamento com entrada paga mas sem parcela 'proxima'
+  state.negotiations
+    .filter(n => n.status === 'em_pagamento' && n.entradaPaga && n.parcelas?.length > 0)
+    .forEach(n => {
+      const temProxima = n.parcelas.some(p => p.status === 'proxima')
+      if (!temProxima) {
+        const next = n.parcelas.find((p, i) => i > 0 && p.status === 'futura')
+        if (next) next.status = 'proxima'
+      }
+    })
   persist()
 })()
 
@@ -264,6 +274,9 @@ function payContractParcelas(contratoId, parcelaNumeros) {
     if (negAtiva.parcelas?.length > 0 && negAtiva.parcelas[0].status !== 'paga') {
       negAtiva.parcelas[0].status = 'paga'
       negAtiva.parcelas[0].dataPagamento = new Date().toISOString()
+      // Promover a próxima parcela futura para 'proxima' (igual ao markParcelaPaid)
+      const next = negAtiva.parcelas.find((p, i) => i > 0 && p.status === 'futura')
+      if (next) next.status = 'proxima'
     }
   }
   // Recalcular métricas do contrato
