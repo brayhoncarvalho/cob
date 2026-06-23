@@ -48,11 +48,22 @@ defineProps({
     <!-- Header -->
     <header class="bg-blue-700 text-white sticky top-0 z-40">
       <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-6">
           <RouterLink to="/atendimento" class="flex items-center gap-2">
             <img :src="baseUrl + 'dock.png'" alt="Logo" class="h-7 w-auto brightness-0 invert" />
-            <span class="text-sm font-semibold text-blue-100">Atendimento</span>
           </RouterLink>
+          <nav class="hidden sm:flex items-center gap-1">
+            <RouterLink
+              to="/atendimento"
+              class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-blue-200 hover:text-white hover:bg-blue-600 transition-colors"
+              active-class="text-white bg-blue-600"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+              </svg>
+              <span>Painel</span>
+            </RouterLink>
+          </nav>
         </div>
 
         <!-- Avatar dropdown -->

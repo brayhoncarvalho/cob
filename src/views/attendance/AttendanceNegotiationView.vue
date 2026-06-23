@@ -387,7 +387,6 @@ function confirmPayment() {
 
 <template>
   <AttendanceLayout
-    title="Simulação em nome do cliente"
     back-to="/atendimento"
     back-label="Painel de Atendimento"
   >
