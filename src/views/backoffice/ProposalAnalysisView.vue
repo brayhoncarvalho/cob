@@ -178,7 +178,7 @@ async function confirmar() {
               <div>
                 <p class="text-xs text-gray-400">Desconto</p>
                 <p class="font-bold text-green-600">{{ formatMoney(neg.desconto) }}</p>
-                <p class="text-xs text-gray-400">{{ ((neg.desconto / neg.totalDivida) * 100).toFixed(1) }}%</p>
+                <p class="text-xs text-gray-400">{{ (((neg.desconto) / (neg.totalDivida || contract?.saldoDevedor || 1)) * 100).toFixed(1) }}%</p>
               </div>
             </div>
           </div>
@@ -244,8 +244,8 @@ async function confirmar() {
             <div class="space-y-2 text-sm">
               <div class="flex justify-between">
                 <span class="text-gray-400">Entrada (%)</span>
-                <span :class="(neg.entrada / (neg.totalDivida || 1)) >= 0.20 ? 'text-green-600' : 'text-amber-600'" class="font-semibold">
-                  {{ ((neg.entrada / (neg.totalDivida || 1)) * 100).toFixed(1) }}%
+                <span :class="(neg.entrada / (neg.totalDivida || contract?.saldoDevedor || 1)) >= 0.20 ? 'text-green-600' : 'text-amber-600'" class="font-semibold">
+                  {{ ((neg.entrada / (neg.totalDivida || contract?.saldoDevedor || 1)) * 100).toFixed(1) }}%
                 </span>
               </div>
               <div class="flex justify-between">

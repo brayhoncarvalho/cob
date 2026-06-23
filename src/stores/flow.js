@@ -86,6 +86,13 @@ const state = reactive(loadState() ?? freshState())
       }
     }
   })
+  // Corrigir negociações sem totalDivida (dados antigos no localStorage)
+  state.negotiations
+    .filter(n => !n.totalDivida)
+    .forEach(n => {
+      const c = state.contracts.find(c => c.id === n.contratoId)
+      if (c) n.totalDivida = c.saldoDevedor
+    })
   // Corrigir negociações em_pagamento com entrada paga mas sem parcela 'proxima'
   state.negotiations
     .filter(n => n.status === 'em_pagamento' && n.entradaPaga && n.parcelas?.length > 0)
@@ -145,6 +152,7 @@ function submitProposal({ id, contratoId, entrada, numParcelas, valorParcela,
     numParcelas,
     valorParcela,
     totalAcordo,
+    totalDivida:   state.contracts.find(c => c.id === contratoId)?.saldoDevedor ?? 0,
     desconto,
     parcelas:      isAuto ? _buildParcelas({ entrada, numParcelas, valorParcela }) : null,
     ...(isAuto ? { dataAprovacao: new Date().toISOString() } : {}),
@@ -336,6 +344,7 @@ function submitAttendantProposal({ id, contratoId, clienteCpf, entrada, numParce
     numParcelas:         Number(numParcelas),
     valorParcela:        Number(valorParcela),
     totalAcordo:         Number(totalAcordo),
+    totalDivida:         state.contracts.find(c => c.id === contratoId)?.saldoDevedor ?? 0,
     desconto:            Number(desconto),
     parcelas:            isAuto ? _buildParcelas({ entrada: Number(entrada), numParcelas: Number(numParcelas), valorParcela: Number(valorParcela) }) : null,
   }
