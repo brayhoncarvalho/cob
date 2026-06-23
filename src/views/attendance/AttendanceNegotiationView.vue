@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AttendanceLayout from '@/layouts/AttendanceLayout.vue'
+import StatusBadge from '@/components/StatusBadge.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
 import { useFlow } from '@/stores/flow.js'
 import { useAuth } from '@/stores/auth.js'
@@ -9,7 +10,7 @@ import { useRules } from '@/stores/rules.js'
 
 const route  = useRoute()
 const router = useRouter()
-const { formatMoney } = useFormatters()
+const { formatMoney, formatDate } = useFormatters()
 const { state: flowState, submitAttendantProposal, cancelAttendantProposal, markParcelaPaid, acceptCounter } = useFlow()
 const { state: authState } = useAuth()
 const { rules } = useRules()
@@ -207,7 +208,6 @@ const showPayment = ref(false)
 const paymentConfirmed = ref(false)
 
 // ── Pagamento de parcelas do acordo (mesmo fluxo do cliente) ─────────────────
-const { formatDate } = useFormatters()
 const pagandoIndex    = ref(null)
 const pagamentoConfirmadoParcela = ref(false)
 
@@ -617,16 +617,17 @@ function confirmPayment() {
 
           <!-- Card: Extrato completo -->
           <div class="card mb-5">
-              <h3 class="font-semibold text-gray-800 text-sm mb-2">Extrato completo</h3>
-              <div class="overflow-x-auto -mx-1">
-                <table class="w-full text-xs min-w-[320px]">
+              <h3 class="font-semibold text-gray-800 mb-2">Extrato completo</h3>
+              <div class="overflow-x-auto -mx-6 px-6">
+                <table class="w-full text-sm min-w-[480px]">
                   <thead>
-                    <tr class="text-gray-400 border-b border-gray-100">
-                      <th class="text-left py-1.5 font-medium pl-1">#</th>
-                      <th class="text-left py-1.5 font-medium">Vencimento</th>
-                      <th class="text-right py-1.5 font-medium">Valor</th>
-                      <th class="text-center py-1.5 font-medium">Status</th>
-                      <th class="text-right py-1.5 font-medium pr-1">Pgto.</th>
+                    <tr class="text-xs text-gray-500 border-b border-gray-100">
+                      <th class="text-left py-2 font-medium">#</th>
+                      <th class="text-left py-2 font-medium">Tipo</th>
+                      <th class="text-left py-2 font-medium">Vencimento</th>
+                      <th class="text-right py-2 font-medium">Valor</th>
+                      <th class="text-center py-2 font-medium">Status</th>
+                      <th class="text-right py-2 font-medium">Pgto.</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-50">
@@ -635,23 +636,14 @@ function confirmPayment() {
                       :key="idx"
                       :class="p.status === 'proxima' ? 'bg-blue-50' : ''"
                     >
-                      <td class="py-2 font-mono text-gray-400 pl-1">{{ p.tipo === 'entrada' ? 'E' : idx }}</td>
-                      <td class="py-2 text-gray-600">{{ formatDate(p.vencimento) }}</td>
-                      <td class="py-2 text-right font-semibold">{{ formatMoney(p.valor) }}</td>
-                      <td class="py-2 text-center">
-                        <span
-                          class="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
-                          :class="{
-                            'bg-green-100 text-green-700': p.status === 'paga',
-                            'bg-blue-100 text-blue-700':   p.status === 'proxima',
-                            'bg-gray-100 text-gray-500':   p.status === 'futura',
-                            'bg-red-100 text-red-700':     p.status === 'vencida',
-                          }"
-                        >
-                          {{ p.status === 'paga' ? 'Paga' : p.status === 'proxima' ? 'Próxima' : p.status === 'futura' ? 'Futura' : 'Vencida' }}
-                        </span>
+                      <td class="py-2.5 text-xs font-mono text-gray-400">{{ p.tipo === 'entrada' ? 'E' : p.numero ?? idx }}</td>
+                      <td class="py-2.5 text-xs text-gray-500 capitalize">{{ p.tipo }}</td>
+                      <td class="py-2.5">{{ formatDate(p.vencimento) }}</td>
+                      <td class="py-2.5 text-right font-semibold">{{ formatMoney(p.valor) }}</td>
+                      <td class="py-2.5 text-center">
+                        <StatusBadge :status="p.status" small />
                       </td>
-                      <td class="py-2 text-right pr-1 text-xs text-gray-400">{{ p.dataPagamento ? formatDate(p.dataPagamento) : '—' }}</td>
+                      <td class="py-2.5 text-right text-xs text-gray-400">{{ p.dataPagamento ? formatDate(p.dataPagamento) : '—' }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -659,7 +651,7 @@ function confirmPayment() {
           </div>
 
           <div class="space-y-3">
-            <button @click="cancelarProposta" class="btn-danger w-full">Cancelar acordo</button>
+            <button v-if="!propostaPendente.entradaPaga" @click="cancelarProposta" class="btn-danger w-full">Cancelar acordo</button>
             <RouterLink to="/atendimento" class="btn-secondary w-full block text-center">Voltar ao painel</RouterLink>
           </div>
         </template>
