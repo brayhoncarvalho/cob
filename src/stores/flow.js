@@ -68,11 +68,22 @@ const state = reactive(loadState() ?? freshState())
     const isStale = c.acordoAtivo && (inactiveIds.has(c.acordoAtivo) || !allNegIds.has(c.acordoAtivo))
     if (isStale) {
       c.acordoAtivo = null
-      const vencidas = (c.parcelas ?? []).filter(p => p.status === 'vencida')
-      c.parcelasVencidas = vencidas.length
-      if (vencidas.length > 0)              c.status = 'em_atraso'
-      else if ((c.parcelas ?? []).every(p => p.status === 'paga')) c.status = 'quitado'
-      else                                   c.status = 'em_dia'
+    }
+    // Recalcular status real pelas parcelas do contrato
+    const parcelas = c.parcelas ?? []
+    if (parcelas.length > 0) {
+      const vencidas = parcelas.filter(p => p.status === 'vencida')
+      if (parcelas.every(p => p.status === 'paga')) {
+        c.status = 'quitado'
+      } else if (c.acordoAtivo) {
+        c.status = 'renegociado'
+      } else if (vencidas.length > 0) {
+        c.status = 'em_atraso'
+        c.parcelasVencidas = vencidas.length
+      } else {
+        c.status = 'em_dia'
+        c.parcelasVencidas = 0
+      }
     }
   })
   persist()
@@ -213,12 +224,19 @@ function markParcelaPaid(negId, parcelaIdx) {
   if (todasPagas) {
     neg.status       = 'quitado'
     neg.dataQuitacao = new Date().toISOString()
-    // Atualiza o contrato vinculado como quitado e limpa acordoAtivo
+    // Limpa acordo ativo e recalcula status do contrato pelas suas próprias parcelas
     const contrato = state.contracts.find(c => c.id === neg.contratoId)
     if (contrato) {
-      contrato.status       = 'quitado'
-      contrato.dataQuitacao = new Date().toISOString()
-      contrato.acordoAtivo  = null
+      contrato.acordoAtivo = null
+      const parcelas = contrato.parcelas ?? []
+      if (parcelas.every(p => p.status === 'paga')) {
+        contrato.status       = 'quitado'
+        contrato.dataQuitacao = new Date().toISOString()
+      } else if (parcelas.some(p => p.status === 'vencida')) {
+        contrato.status = 'em_atraso'
+      } else {
+        contrato.status = 'em_dia'
+      }
     }
   }
 
