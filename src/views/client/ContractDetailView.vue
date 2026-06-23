@@ -130,25 +130,54 @@ const parcelasEmAberto = computed(() =>
           <StatusBadge :status="contract.status" />
         </div>
 
-        <!-- Métricas principais -->
-        <div class="grid grid-cols-2 gap-4 text-sm">
+        <!-- Métricas principais — contextuais por estado -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+
+          <!-- 1. Progresso de pagamento -->
           <div>
-            <p class="text-gray-400 text-xs mb-0.5">Saldo devedor</p>
-            <p class="font-semibold" :class="contract.parcelasVencidas > 0 ? 'text-red-700' : 'text-gray-900'">
-              {{ formatMoney(contract.saldoDevedor) }}
+            <p class="text-gray-400 text-xs mb-0.5">Parcelas pagas</p>
+            <p class="font-semibold text-gray-900">{{ contract.parcelasPagas }} de {{ contract.totalParcelas }}</p>
+            <div class="w-full bg-gray-100 rounded-full h-1.5 mt-1.5">
+              <div
+                class="h-1.5 rounded-full transition-all duration-500"
+                :class="contract.parcelasVencidas > 0 && !acordoAtivo ? 'bg-red-400' : 'bg-blue-500'"
+                :style="{ width: Math.round((contract.parcelasPagas / contract.totalParcelas) * 100) + '%' }"
+              />
+            </div>
+          </div>
+
+          <!-- 2. Parcela mensal -->
+          <div>
+            <p class="text-gray-400 text-xs mb-0.5">Parcela mensal</p>
+            <p class="font-semibold text-gray-900">
+              {{ formatMoney(contract.parcelas.find(p => p.status !== 'paga')?.valor ?? contract.parcelas[0]?.valor ?? 0) }}
             </p>
           </div>
-          <div>
-            <p class="text-gray-400 text-xs mb-0.5">Parcelas</p>
-            <p class="font-semibold text-gray-900">{{ contract.parcelasPagas }}/{{ contract.totalParcelas }}</p>
-          </div>
-        </div>
 
-        <!-- Info secundária compacta -->
-        <div class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-400">
-          <span>{{ formatMoney(contract.valorContratado) }} contratado</span>
-          <span>{{ contract.taxaJuros }}% a.m.</span>
-          <span>Contratado em {{ formatDate(contract.dataContratacao) }}</span>
+          <!-- 3. Variável: em atraso / coberto por acordo / próximo vencimento -->
+          <div v-if="contract.parcelasVencidas > 0 && !acordoAtivo">
+            <p class="text-red-500 text-xs mb-0.5 font-medium">Em atraso</p>
+            <p class="font-bold text-red-700">{{ formatMoney(totalVencido) }}</p>
+            <p class="text-xs text-red-400 mt-0.5">{{ contract.parcelasVencidas }} parcela{{ contract.parcelasVencidas > 1 ? 's' : '' }} · {{ contract.diasAtraso }} dias</p>
+          </div>
+          <div v-else-if="contract.parcelasVencidas > 0 && acordoAtivo">
+            <p class="text-blue-500 text-xs mb-0.5 font-medium">Atraso coberto</p>
+            <p class="font-bold text-blue-700">Acordo ativo</p>
+            <p class="text-xs text-blue-400 mt-0.5">{{ formatMoney(totalVencido) }} renegociado</p>
+          </div>
+          <div v-else>
+            <p class="text-gray-400 text-xs mb-0.5">Próximo vencimento</p>
+            <p class="font-semibold text-gray-900">
+              {{ formatDate(contract.parcelas.find(p => p.status === 'proxima')?.vencimento ?? '') || '—' }}
+            </p>
+          </div>
+
+          <!-- 4. Taxa e data de contratação -->
+          <div>
+            <p class="text-gray-400 text-xs mb-0.5">Taxa</p>
+            <p class="font-semibold text-gray-900">{{ contract.taxaJuros }}% a.m.</p>
+            <p class="text-xs text-gray-400 mt-0.5">desde {{ formatDate(contract.dataContratacao) }}</p>
+          </div>
         </div>
 
         <!-- Encargos de atraso (colapsável) — só exibe se não há acordo ativo -->
