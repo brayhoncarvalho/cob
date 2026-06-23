@@ -393,7 +393,7 @@ function confirmPayment() {
   >
     <!-- ── Proposta com acordo ativo: pagamento ── -->
     <template v-if="propostaPendente && !cancelando">
-      <div class="max-w-lg mx-auto">
+      <div class="max-w-3xl mx-auto">
 
         <!-- Contraproposta recebida da mesa — aguardando aceite do cliente -->
         <template v-if="propostaPendente.status === 'contraproposta'">
@@ -660,7 +660,7 @@ function confirmPayment() {
 
     <!-- ── Cancelamento confirmado ── -->
     <template v-else-if="cancelando">
-      <div class="max-w-lg mx-auto">
+      <div class="max-w-3xl mx-auto">
         <div class="card text-center py-10 mb-5">
           <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -681,7 +681,7 @@ function confirmPayment() {
 
     <!-- Sucesso (proposta recém enviada — mas showPayment já exibe o pagamento) -->
     <template v-if="submitted && !propostaPendente && !showPayment && !paymentConfirmed">
-      <div class="max-w-lg mx-auto">
+      <div class="max-w-3xl mx-auto">
         <div class="card text-center py-10 mb-6">
           <svg class="w-14 h-14 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           <h2 class="text-xl font-bold text-green-700 mb-2">Acordo ativado!</h2>
@@ -698,7 +698,7 @@ function confirmPayment() {
 
     <!-- Formulário (só aparece se não há proposta pendente) -->
     <template v-else-if="!propostaPendente && !cancelando">
-      <div class="max-w-2xl mx-auto">
+      <div class="max-w-3xl mx-auto">
 
         <!-- Info do cliente -->
         <div class="card mb-6 bg-blue-50 border border-blue-100">
