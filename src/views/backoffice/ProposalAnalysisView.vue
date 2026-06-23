@@ -387,10 +387,10 @@ async function confirmar() {
               </button>
             </div>
 
-            <!-- Motivo (reprovar / contraproposta) -->
-            <div v-if="decisao === 'reprovar' || decisao === 'contraproposta'" class="mb-4">
+            <!-- Motivo (somente reprovar) -->
+            <div v-if="decisao === 'reprovar'" class="mb-4">
               <label class="block text-xs font-medium text-gray-700 mb-1">
-                Motivo / Observação
+                Motivo da reprovação
               </label>
               <textarea
                 v-model="motivo"
