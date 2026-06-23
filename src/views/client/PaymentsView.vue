@@ -49,6 +49,22 @@ const parcelasEmAtraso = computed(() => {
       })
     })
   })
+  // Entrada do acordo vencida sem ter sido paga
+  negotiations.filter(n => n.status === 'em_pagamento' && !n.entradaPaga).forEach(n => {
+    n.parcelas?.filter(p => p.tipo === 'entrada' && p.status === 'vencida').forEach(p => {
+      items.push({
+        sourceType: 'acordo',
+        sourceLabel: `Acordo ${n.id} — Entrada`,
+        contratoId: n.contratoId,
+        parcelaNum: p.numero,
+        vencimento: p.vencimento,
+        valor: p.valor,
+        payRoute: `/negociacoes/${n.id}?pagar=1`,
+        detailRoute: `/negociacoes/${n.id}`,
+        negociarRoute: null,
+      })
+    })
+  })
   return items.sort((a, b) => a.vencimento.localeCompare(b.vencimento))
 })
 
@@ -75,6 +91,21 @@ const proximosVencimentos = computed(() => {
       items.push({
         sourceType: 'acordo',
         sourceLabel: `Acordo ${n.id}`,
+        contratoId: n.contratoId,
+        parcelaNum: p.numero,
+        vencimento: p.vencimento,
+        valor: p.valor,
+        payRoute: `/negociacoes/${n.id}?pagar=1`,
+        detailRoute: `/negociacoes/${n.id}`,
+      })
+    })
+  })
+  // Entrada do acordo ainda não paga — exibir como próximo vencimento
+  negotiations.filter(n => n.status === 'em_pagamento' && !n.entradaPaga).forEach(n => {
+    n.parcelas?.filter(p => p.tipo === 'entrada' && (p.status === 'proxima' || p.status === 'futura')).forEach(p => {
+      items.push({
+        sourceType: 'acordo',
+        sourceLabel: `Acordo ${n.id} — Entrada`,
         contratoId: n.contratoId,
         parcelaNum: p.numero,
         vencimento: p.vencimento,
