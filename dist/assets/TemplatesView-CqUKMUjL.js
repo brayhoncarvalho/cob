@@ -1,4 +1,4 @@
-import{C as B,f as g,q as U,j as G,l as C,o as n,a as e,c as s,F as k,r as S,u as K,n as D,t as d,e as T,m as P,T as j,d as _,b as L,z as N,g as y}from"./index-7geypDvA.js";import{_ as Q}from"./BackofficeLayout-BkNcPYvH.js";import"./proposal-BlpAdLJl.js";const V=[{id:"pre_vencimento",label:"Lembrete pré-vencimento",descricao:"Enviado 3 dias antes do vencimento da parcela.",email:{assunto:"Sua parcela vence em breve — Dock",corpo:`Olá, {nome}!
+import{C as B,f as g,q as U,j as G,l as C,o as n,a as e,c as s,F as k,r as S,u as K,n as D,t as d,e as T,m as P,T as j,d as _,b as L,z as N,g as y}from"./index-CATOSr62.js";import{_ as Q}from"./BackofficeLayout-D65tpLF_.js";import"./proposal-CFTfNAFY.js";const V=[{id:"pre_vencimento",label:"Lembrete pré-vencimento",descricao:"Enviado 3 dias antes do vencimento da parcela.",email:{assunto:"Sua parcela vence em breve — Dock",corpo:`Olá, {nome}!
 
 Lembramos que sua parcela do contrato #{contrato} no valor de {valor} vence em {vencimento}.
 
