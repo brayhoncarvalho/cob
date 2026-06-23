@@ -36,13 +36,13 @@ function _buildParcelas({ entrada, numParcelas, valorParcela }) {
   // Entrada via Pix — vence amanhã
   const dEnt = new Date(hoje)
   dEnt.setDate(dEnt.getDate() + 1)
-  parcelas.push({ numero: 0, tipo: 'entrada', vencimento: dEnt.toISOString().split('T')[0], valor: entrada, status: 'proxima' })
+  parcelas.push({ numero: 0, tipo: 'entrada', vencimento: dEnt.toISOString().split('T')[0], valor: entrada, valorAtualizado: entrada, status: 'proxima' })
 
   // Parcelas mensais
   for (let i = 1; i <= numParcelas; i++) {
     const d = new Date(hoje)
     d.setMonth(d.getMonth() + i)
-    parcelas.push({ numero: i, tipo: 'parcela', vencimento: d.toISOString().split('T')[0], valor: valorParcela, status: i === 1 ? 'futura' : 'futura' })
+    parcelas.push({ numero: i, tipo: 'parcela', vencimento: d.toISOString().split('T')[0], valor: valorParcela, valorAtualizado: valorParcela, status: i === 1 ? 'futura' : 'futura' })
   }
   // Primeira parcela mensal fica como proxima depois que entrada for paga
   if (parcelas[1]) parcelas[1].status = 'futura'

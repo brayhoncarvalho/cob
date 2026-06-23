@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
@@ -12,15 +12,23 @@ const { state: flowState, payContractParcelas } = useFlow()
 
 const contract = computed(() => flowState.contracts.find(c => c.id === route.params.id))
 
-// Acordo ativo em pagamento para este contrato
+// Acordo ativo em pagamento para este contrato (entrada não paga = pagamento da entrada)
 const acordoAtivo = computed(() =>
   flowState.negotiations.find(n =>
     n.contratoId === route.params.id && n.status === 'em_pagamento' && !n.entradaPaga
   ) ?? null
 )
 
+// Acordo ativo com entrada já paga (pagamento de parcelas do acordo)
+const acordoEmAndamento = computed(() =>
+  flowState.negotiations.find(n =>
+    n.contratoId === route.params.id && n.status === 'em_pagamento'
+  ) ?? null
+)
+
 // Parcelas a pagar: se query tem ?parcelas=9,10 usa essas;
 // se há acordo ativo sem entrada paga, usa a parcela de entrada do acordo;
+// se há acordo em andamento (entrada paga) sem query, redireciona para o acordo;
 // senão pega parcelas vencidas + próxima do contrato
 const parcelasSelecionadas = computed(() => {
   if (!contract.value) return []
@@ -36,13 +44,24 @@ const parcelasSelecionadas = computed(() => {
     // fallback se parcelas do acordo não foram geradas
     return [{ numero: 0, valor: acordoAtivo.value.entrada, valorAtualizado: acordoAtivo.value.entrada, juros: 0, multa: 0, _acordo: true }]
   }
+  // Acordo em andamento com entrada paga — não deveria pagar parcelas do contrato diretamente
+  if (acordoEmAndamento.value) {
+    return []
+  }
   // Sem acordo: parcelas vencidas + próxima do contrato
   return contract.value.parcelas.filter(p => p.status === 'vencida' || p.status === 'proxima')
 })
 
-const valorOriginal = computed(() => parcelasSelecionadas.value.reduce((s, p) => s + p.valor, 0))
+const valorOriginal = computed(() => parcelasSelecionadas.value.reduce((s, p) => s + (p.valor ?? 0), 0))
 const jurosTotal    = computed(() => parcelasSelecionadas.value.reduce((s, p) => s + (p.juros ?? 0) + (p.multa ?? 0), 0))
-const valorTotal    = computed(() => parcelasSelecionadas.value.reduce((s, p) => s + p.valorAtualizado, 0))
+const valorTotal    = computed(() => parcelasSelecionadas.value.reduce((s, p) => s + (p.valorAtualizado ?? p.valor ?? 0), 0))
+
+// Se há acordo em andamento (entrada paga) e nenhuma parcela via query, redireciona para o acordo
+watch(acordoEmAndamento, (neg) => {
+  if (neg && neg.entradaPaga && !route.query.parcelas) {
+    router.replace(`/negociacoes/${neg.id}`)
+  }
+}, { immediate: true })
 
 // Estado do pagamento: waiting | confirmed | expired
 const paymentState = ref('waiting')
