@@ -7,7 +7,7 @@ import { useFormatters } from '@/composables/useFormatters.js'
 import { useFlow } from '@/stores/flow.js'
 
 const router = useRouter()
-const { formatMoney } = useFormatters()
+const { formatMoney, formatDate } = useFormatters()
 const { state: flowState } = useFlow()
 
 // Ordem: débito > negociação > em dia > quitado
@@ -23,6 +23,13 @@ function totalVencidoContrato(c) {
   return c.parcelas
     .filter(p => p.status === 'vencida')
     .reduce((s, p) => s + p.valorAtualizado, 0)
+}
+
+// Retorna a parcela mais próxima ainda não paga (proxima > futura)
+function proximoVencimentoContrato(c) {
+  return c.parcelas.find(p => p.status === 'proxima') ??
+         c.parcelas.find(p => p.status === 'futura') ??
+         null
 }
 
 // Retorna o ID do acordo somente se a negociação ainda está ativa
@@ -49,32 +56,54 @@ function acordoVivoDeContrato(c) {
       >
         <div class="flex items-start justify-between gap-4">
           <div class="flex-1 min-w-0">
-            <div class="flex flex-wrap items-center gap-2 mb-2">
+            <!-- Cabeçalho -->
+            <div class="flex flex-wrap items-center gap-2 mb-1">
               <span class="font-bold text-gray-900">Contrato #{{ c.id }}</span>
-              <span class="text-sm text-gray-500">{{ c.tipo }}</span>
               <StatusBadge :status="c.status" />
             </div>
+            <p class="text-sm text-gray-500 mb-3">{{ c.tipo }}</p>
 
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+            <!-- Métricas -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3 text-sm">
+              <!-- Parcelas pagas -->
               <div>
-                <p class="text-gray-500 text-xs">Saldo devedor</p>
-                <p class="font-semibold text-gray-900">{{ formatMoney(c.saldoDevedor) }}</p>
+                <p class="text-gray-500 text-xs">Parcelas pagas</p>
+                <p class="font-semibold text-gray-900">{{ c.parcelasPagas }} de {{ c.totalParcelas }}</p>
               </div>
+
+              <!-- Parcela mensal -->
               <div>
-                <p class="text-gray-500 text-xs">Parcelas</p>
-                <p class="font-semibold text-gray-900">{{ c.parcelasPagas }}/{{ c.totalParcelas }}</p>
+                <p class="text-gray-500 text-xs">Parcela mensal</p>
+                <p class="font-semibold text-gray-900">{{ formatMoney(c.parcelas[0]?.valor ?? 0) }}</p>
               </div>
+
+              <!-- Em atraso ou Acordo ativo -->
               <div v-if="c.parcelasVencidas > 0 && !acordoVivoDeContrato(c)">
-                <p class="text-gray-500 text-xs">Vencidas</p>
-                <p class="font-semibold text-red-600">{{ c.parcelasVencidas }}x — {{ formatMoney(totalVencidoContrato(c)) }}</p>
+                <p class="text-gray-500 text-xs">Em atraso</p>
+                <p class="font-semibold text-red-600">{{ formatMoney(totalVencidoContrato(c)) }}</p>
+                <p class="text-xs text-gray-400 mt-0.5">{{ c.parcelasVencidas }} parcela{{ c.parcelasVencidas > 1 ? 's' : '' }} · {{ c.diasAtraso }} dias</p>
               </div>
               <div v-else-if="acordoVivoDeContrato(c)">
                 <p class="text-gray-500 text-xs">Acordo</p>
                 <p class="font-semibold text-blue-600">Ativo</p>
               </div>
+              <div v-else-if="c.status === 'quitado'">
+                <p class="text-gray-500 text-xs">Data de quitação</p>
+                <p class="font-semibold text-gray-900">{{ formatDate(c.parcelas.at(-1)?.dataPagamento) }}</p>
+              </div>
+              <div v-else>
+                <template v-if="proximoVencimentoContrato(c)">
+                  <p class="text-gray-500 text-xs">Próxima fatura</p>
+                  <p class="font-semibold text-gray-900">{{ formatDate(proximoVencimentoContrato(c).vencimento) }}</p>
+                  <p class="text-xs text-gray-400 mt-0.5">{{ formatMoney(proximoVencimentoContrato(c).valor) }}</p>
+                </template>
+              </div>
+
+              <!-- Taxa -->
               <div>
                 <p class="text-gray-500 text-xs">Taxa</p>
                 <p class="font-semibold text-gray-900">{{ c.taxaJuros }}% a.m.</p>
+                <p class="text-xs text-gray-400 mt-0.5">desde {{ formatDate(c.dataContratacao) }}</p>
               </div>
             </div>
 
