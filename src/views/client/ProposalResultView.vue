@@ -183,7 +183,7 @@ function handleAcceptCounter() {
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-500">Prazo de resposta</span>
-                <span class="font-semibold text-amber-700">Até 24h úteis</span>
+                <span class="font-semibold text-amber-700">Até 24h</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-500">Entrada proposta</span>

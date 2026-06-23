@@ -175,7 +175,7 @@ const proposalStatus = computed(() => {
 
 const statusConfig = computed(() => ({
   auto:               { icon: 'success', label: 'Elegível para aprovação imediata!', cls: 'alert-success' },
-  mesa:               { icon: 'warning', label: 'Proposta será analisada pela Mesa de Crédito — retorno em até 24h úteis.', cls: 'alert-warning' },
+  mesa:               { icon: 'warning', label: 'Proposta será analisada pela Mesa de Crédito — retorno em até 24h.', cls: 'alert-warning' },
   blocked_zero:       { icon: 'blocked', label: 'Entrada obrigatória. Informe um valor maior que zero.', cls: 'alert-danger' },
   blocked_parcela:    { icon: 'blocked', label: `Parcela mínima: ${formatMoney(rules.parcelaMinimaValor)}. Reduza o número de parcelas.`, cls: 'alert-danger' },
   blocked_max_parcela:{ icon: 'blocked', label: `Com ${numParcelas.value}x, a parcela máxima é ${formatMoney(maxParcelaInput.value)}. Reduza o valor ou aumente as parcelas.`, cls: 'alert-danger' },
@@ -388,7 +388,7 @@ function submit() {
           </button>
 
           <p v-if="proposalStatus === 'mesa'" class="text-xs text-gray-400 text-center">
-            Proposta será analisada — retorno em até 24h úteis.
+            Proposta será analisada — retorno em até 24h.
           </p>
         </div>
       </div>

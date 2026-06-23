@@ -20,6 +20,7 @@ const ManagerDashboardView = () => import('@/views/backoffice/ManagerDashboardVi
 const ManagerAnalysisView  = () => import('@/views/backoffice/ManagerAnalysisView.vue')
 const ParametrosView       = () => import('@/views/backoffice/ParametrosView.vue')
 const TemplatesView        = () => import('@/views/backoffice/TemplatesView.vue')
+const AcordosView          = () => import('@/views/backoffice/AcordosView.vue')
 
 const AttendanceDashboardView    = () => import('@/views/attendance/AttendanceDashboardView.vue')
 const AttendanceNegotiationView  = () => import('@/views/attendance/AttendanceNegotiationView.vue')
@@ -46,11 +47,13 @@ const routes = [
 
   // Back-office — Analista (1º Nível)
   { path: '/backoffice/fila',                component: ApprovalQueueView,    meta: { requiresAuth: true, role: 'analyst' } },
+  { path: '/backoffice/acordos',             component: AcordosView,          meta: { requiresAuth: true, role: 'analyst' } },
   { path: '/backoffice/proposta/:id',        component: ProposalAnalysisView, meta: { requiresAuth: true, role: 'analyst' } },
 
   // Back-office — Gerente (2º Nível)
   { path: '/backoffice/gerente',             component: ManagerDashboardView, meta: { requiresAuth: true, role: 'manager' } },
   { path: '/backoffice/gerente/proposta/:id',component: ManagerAnalysisView,  meta: { requiresAuth: true, role: 'manager' } },
+  { path: '/backoffice/gerente/acordos',      component: AcordosView,          meta: { requiresAuth: true, role: 'manager' } },
   { path: '/backoffice/gerente/parametros',   component: ParametrosView,       meta: { requiresAuth: true, role: 'manager' } },
   { path: '/backoffice/gerente/comunicacao',   component: TemplatesView,        meta: { requiresAuth: true, role: 'manager' } },
 
