@@ -7,7 +7,7 @@ import { useFormatters } from '@/composables/useFormatters.js'
 import { useFlow } from '@/stores/flow.js'
 
 const router = useRouter()
-const { formatMoney } = useFormatters()
+const { formatMoney, formatDate } = useFormatters()
 const { state: flowState } = useFlow()
 
 // ── Base de clientes (mock) ───────────────────────────────────────────────────
@@ -159,7 +159,35 @@ function initials(nome) {
 // Acordos aprovados pela mesa aguardando pagamento (visão global do atendente)
 const acordosAguardandoPagamentoGlobal = computed(() =>
   flowState.negotiations.filter(n => n.status === 'em_pagamento' && !n.entradaPaga && n.simuladoPorAtendente)
-)</script>
+)
+
+// Contrapropostas aguardando resposta do cliente — com envelhecimento
+const contrapropostasPendentes = computed(() =>
+  flowState.negotiations
+    .filter(n => n.status === 'contraproposta')
+    .map(n => {
+      const cliente = CLIENTES_BASE.find(c => c.cpf === n.clienteCpf) ?? { nome: 'Cliente', cpf: n.clienteCpf ?? '—' }
+      const dataRef = n.dataDecisaoGerencia ?? n.dataEnvio ?? null
+      const diasEsperando = dataRef
+        ? Math.floor((Date.now() - new Date(dataRef).getTime()) / 86_400_000)
+        : 0
+      return { ...n, cliente, diasEsperando }
+    })
+    .sort((a, b) => b.diasEsperando - a.diasEsperando)
+)
+
+// ── v2: modal de contato ──────────────────────────────────────────────────────
+const modalContatoAberto = ref(false)
+const clienteContato = ref(null)
+
+function abrirContato(negociacao) {
+  clienteContato.value = negociacao
+  modalContatoAberto.value = true
+}
+function fecharContato() {
+  modalContatoAberto.value = false
+  clienteContato.value = null
+}</script>
 
 <template>
   <AttendanceLayout title="">
@@ -452,6 +480,147 @@ const acordosAguardandoPagamentoGlobal = computed(() =>
       </div>
 
     </div>
+
+    <!-- ── Contrapropostas aguardando resposta (atividade secundária) ──── -->
+    <div v-if="contrapropostasPendentes.length" class="mt-10">
+      <div class="flex items-center gap-2 mb-3">
+        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Aguardando resposta do cliente</h2>
+        <span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+          {{ contrapropostasPendentes.length }}
+        </span>
+      </div>
+
+      <div class="space-y-2">
+        <div
+          v-for="n in contrapropostasPendentes"
+          :key="n.id"
+          class="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center justify-between gap-4"
+        >
+          <!-- Indicador de envelhecimento -->
+          <div
+            class="shrink-0 w-11 h-11 rounded-xl flex flex-col items-center justify-center text-center"
+            :class="n.diasEsperando >= 8 ? 'bg-red-100' : n.diasEsperando >= 4 ? 'bg-amber-100' : 'bg-blue-100'"
+          >
+            <span
+              class="text-lg font-bold leading-none"
+              :class="n.diasEsperando >= 8 ? 'text-red-700' : n.diasEsperando >= 4 ? 'text-amber-700' : 'text-blue-700'"
+            >{{ n.diasEsperando }}</span>
+            <span
+              class="text-[9px] font-medium uppercase tracking-wide leading-none mt-0.5"
+              :class="n.diasEsperando >= 8 ? 'text-red-500' : n.diasEsperando >= 4 ? 'text-amber-500' : 'text-blue-500'"
+            >dias</span>
+          </div>
+
+          <!-- Info -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <p class="text-sm font-semibold text-gray-900">{{ n.cliente.nome }}</p>
+              <span
+                class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+                :class="n.diasEsperando >= 8 ? 'bg-red-100 text-red-700' : n.diasEsperando >= 4 ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'"
+              >{{ n.diasEsperando >= 8 ? 'Urgente' : n.diasEsperando >= 4 ? 'Atenção' : 'Aguardando' }}</span>
+            </div>
+            <p class="text-xs text-gray-400 mt-0.5 font-mono">{{ n.id }} · Contrato #{{ n.contratoId }}</p>
+            <p v-if="n.contraproposta" class="text-xs text-gray-500 mt-0.5">
+              Proposta enviada: entrada {{ formatMoney(n.contraproposta.entrada) }} + {{ n.contraproposta.numParcelas }}x de {{ formatMoney(n.contraproposta.valorParcela) }}
+            </p>
+            <p class="text-xs text-gray-400 mt-0.5">Enviada em {{ formatDate(n.dataDecisaoGerencia) }}</p>
+          </div>
+
+          <!-- Ação — v2: substituir pelo modal de contato -->
+          <button
+            v-if="false"
+            @click="abrirContato(n)"
+            class="shrink-0 text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-2 rounded-lg transition-colors whitespace-nowrap"
+          >
+            Contatar cliente
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- v2: Modal de contato do cliente ──────────────────────────────────── -->
+    <Teleport v-if="false" to="body">
+      <Transition
+        enter-active-class="transition-all duration-200 ease-out"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition-all duration-150 ease-in"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="modalContatoAberto && clienteContato"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          role="dialog" aria-modal="true"
+          @click.self="fecharContato"
+        >
+          <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-5">
+              <h2 class="text-base font-bold text-gray-900">Contato do cliente</h2>
+              <button @click="fecharContato" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            <!-- Avatar + nome -->
+            <div class="flex items-center gap-3 mb-5">
+              <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-lg shrink-0">
+                {{ initials(clienteContato.cliente.nome) }}
+              </div>
+              <div>
+                <p class="font-semibold text-gray-900">{{ clienteContato.cliente.nome }}</p>
+                <p class="text-xs text-gray-400 font-mono">{{ clienteContato.cliente.cpf }}</p>
+              </div>
+            </div>
+
+            <!-- Dados de contato -->
+            <div class="space-y-3 mb-6">
+              <div class="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/></svg>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs text-gray-400">Telefone</p>
+                  <p class="text-sm font-medium text-gray-900">{{ clienteContato.cliente.telefone ?? '—' }}</p>
+                </div>
+                <a
+                  v-if="clienteContato.cliente.telefone"
+                  :href="`tel:${clienteContato.cliente.telefone?.replace(/\D/g,'')}`"
+                  class="text-xs font-semibold text-green-700 bg-green-100 hover:bg-green-200 px-2.5 py-1 rounded-lg transition-colors"
+                >Ligar</a>
+              </div>
+
+              <div class="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs text-gray-400">E-mail</p>
+                  <p class="text-sm font-medium text-gray-900 truncate">{{ clienteContato.cliente.email ?? '—' }}</p>
+                </div>
+                <a
+                  v-if="clienteContato.cliente.email"
+                  :href="`mailto:${clienteContato.cliente.email}`"
+                  class="text-xs font-semibold text-blue-700 bg-blue-100 hover:bg-blue-200 px-2.5 py-1 rounded-lg transition-colors"
+                >E-mail</a>
+              </div>
+            </div>
+
+            <!-- Contexto da negociação -->
+            <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800 mb-5">
+              <p class="font-semibold mb-1">Contraproposta aguardando há {{ clienteContato.diasEsperando }} dia(s)</p>
+              <p v-if="clienteContato.contraproposta">
+                Entrada {{ formatMoney(clienteContato.contraproposta.entrada) }} +
+                {{ clienteContato.contraproposta.numParcelas }}x de {{ formatMoney(clienteContato.contraproposta.valorParcela) }}
+              </p>
+            </div>
+
+            <button @click="fecharContato" class="w-full btn-secondary text-sm">Fechar</button>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
     <div class="h-8" />
   </AttendanceLayout>
 </template>

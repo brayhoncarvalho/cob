@@ -11,7 +11,7 @@ import { useRules } from '@/stores/rules.js'
 const route  = useRoute()
 const router = useRouter()
 const { formatMoney, formatDate } = useFormatters()
-const { state: flowState, submitAttendantProposal, cancelAttendantProposal, markParcelaPaid, acceptCounter } = useFlow()
+const { state: flowState, submitAttendantProposal, cancelAttendantProposal, markParcelaPaid, acceptCounter, payContractParcelas } = useFlow()
 const { state: authState } = useAuth()
 const { rules } = useRules()
 
@@ -382,6 +382,129 @@ function confirmPayment() {
   }
   paymentConfirmed.value = true
   showPayment.value = false
+}
+
+// ── Pagamento direto de parcelas do contrato (sem acordo) ─────────────────────
+
+const parcelasContratoDisponiveis = computed(() => {
+  if (!contract.value) return []
+  return contract.value.parcelas.filter(p => p.status === 'vencida' || p.status === 'proxima')
+})
+
+const parcelasContratoSelecionadas = ref(new Set())
+
+watch(contract, (c) => {
+  if (!c) { parcelasContratoSelecionadas.value = new Set(); return }
+  const vencidas = c.parcelas.filter(p => p.status === 'vencida')
+  const proxima  = c.parcelas.find(p => p.status === 'proxima')
+  const toSelect = vencidas.length > 0 ? vencidas : (proxima ? [proxima] : [])
+  parcelasContratoSelecionadas.value = new Set(toSelect.map(p => p.numero))
+}, { immediate: true })
+
+const totalContratoSelecionado = computed(() =>
+  [...parcelasContratoSelecionadas.value].reduce((s, num) => {
+    const p = contract.value?.parcelas?.find(p => p.numero === num)
+    return s + (p?.valorAtualizado ?? p?.valor ?? 0)
+  }, 0)
+)
+
+function toggleParcelaContrato(numero) {
+  const s = new Set(parcelasContratoSelecionadas.value)
+  s.has(numero) ? s.delete(numero) : s.add(numero)
+  parcelasContratoSelecionadas.value = s
+}
+
+const modalPagamentoContrato  = ref(false)
+const metodoPagamentoContrato = ref(null)
+const pagamentoContratoConfirmado = ref(false)
+
+const pixAbertoContrato      = ref(false)
+const pixCopiadoContrato     = ref(false)
+const pixParcelaContrato     = ref(null)
+const _pixNumerosContrato    = ref(null)
+
+const boletoAbertoContrato   = ref(false)
+const boletoCopiadoContrato  = ref(false)
+const boletoParcelaContrato  = ref(null)
+const _boletoNumerosContrato = ref(null)
+
+function abrirModalPagamentoContrato() {
+  metodoPagamentoContrato.value = null
+  modalPagamentoContrato.value  = true
+}
+
+function confirmarModalPagamentoContrato() {
+  if (!metodoPagamentoContrato.value || !parcelasContratoSelecionadas.value.size) return
+  const numeros     = [...parcelasContratoSelecionadas.value]
+  const primeiraParc = contract.value?.parcelas?.find(p => numeros.includes(p.numero))
+  if (metodoPagamentoContrato.value === 'pix') {
+    pixParcelaContrato.value  = primeiraParc
+    _pixNumerosContrato.value = numeros
+    pixAbertoContrato.value   = true
+    modalPagamentoContrato.value = false
+  } else {
+    boletoParcelaContrato.value  = primeiraParc
+    _boletoNumerosContrato.value = numeros
+    boletoAbertoContrato.value   = true
+    modalPagamentoContrato.value = false
+  }
+}
+
+function copiarPixContrato() {
+  navigator.clipboard?.writeText(PIX_CHAVE).catch(() => {})
+  pixCopiadoContrato.value = true
+  setTimeout(() => pixCopiadoContrato.value = false, 2000)
+}
+
+function confirmarPixContrato() {
+  const numeros = _pixNumerosContrato.value ?? []
+  pixAbertoContrato.value   = false
+  _pixNumerosContrato.value = null
+  if (numeros.length) {
+    payContractParcelas(contratoSelecionado.value, numeros)
+    parcelasContratoSelecionadas.value = new Set()
+    pagamentoContratoConfirmado.value  = true
+  }
+}
+
+function fecharPixContrato() {
+  pixAbertoContrato.value   = false
+  _pixNumerosContrato.value = null
+}
+
+function copiarBoletoContrato() {
+  navigator.clipboard?.writeText(BOLETO_CODIGO).catch(() => {})
+  boletoCopiadoContrato.value = true
+  setTimeout(() => boletoCopiadoContrato.value = false, 2000)
+}
+
+function baixarBoletoContrato() {
+  const p = boletoParcelaContrato.value
+  const conteudo =
+    `BOLETO BANCÁRIO — SIMULAÇÃO\n\nBeneficiário: Dock S.A.\nVencimento: ${formatDate(p?.vencimento)}\nValor: ${formatMoney(totalContratoSelecionado.value)}\n\nLinha Digitável:\n${BOLETO_CODIGO}\n\nInstruções: Não receber após o vencimento.`
+  const blob = new Blob([conteudo], { type: 'text/plain' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = `boleto-contrato-${contratoSelecionado.value}.txt`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function confirmarBoletoContrato() {
+  const numeros = _boletoNumerosContrato.value ?? []
+  boletoAbertoContrato.value   = false
+  _boletoNumerosContrato.value = null
+  if (numeros.length) {
+    payContractParcelas(contratoSelecionado.value, numeros)
+    parcelasContratoSelecionadas.value = new Set()
+    pagamentoContratoConfirmado.value  = true
+  }
+}
+
+function fecharBoletoContrato() {
+  boletoAbertoContrato.value   = false
+  _boletoNumerosContrato.value = null
 }
 </script>
 
@@ -924,8 +1047,90 @@ function confirmPayment() {
           <p class="text-xs text-gray-400 text-center mt-2">O cliente precisará confirmar antes do acordo ser ativado.</p>
         </div>
 
+        <!-- Pagar parcelas diretamente (sem criar acordo) -->
+        <div v-if="contract && !acordoVivo && parcelasContratoDisponiveis.length > 0" class="card mb-6">
+          <template v-if="pagamentoContratoConfirmado">
+            <div class="flex flex-col items-center py-6 text-center">
+              <svg class="w-12 h-12 text-green-500 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <p class="font-semibold text-green-800 mb-1">Pagamento registrado!</p>
+              <p class="text-sm text-gray-500 mb-4">As parcelas foram marcadas como pagas.</p>
+              <button @click="pagamentoContratoConfirmado = false" class="btn-secondary text-sm">Fechar</button>
+            </div>
+          </template>
+          <template v-else>
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/></svg>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900 text-sm">Pagar débitos diretamente</h3>
+                <p class="text-xs text-gray-400">Sem criar acordo — registra o pagamento agora</p>
+              </div>
+            </div>
+
+            <!-- Lista de parcelas selecionáveis -->
+            <div class="divide-y divide-gray-100 -mx-6 overflow-hidden mb-3">
+              <button
+                v-for="p in parcelasContratoDisponiveis"
+                :key="p.numero"
+                type="button"
+                @click="toggleParcelaContrato(p.numero)"
+                :aria-pressed="parcelasContratoSelecionadas.has(p.numero)"
+                class="w-full flex items-center gap-3 px-6 py-3.5 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+                :class="parcelasContratoSelecionadas.has(p.numero) ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'"
+              >
+                <div
+                  class="shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all"
+                  :class="parcelasContratoSelecionadas.has(p.numero) ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'"
+                >
+                  <svg v-if="parcelasContratoSelecionadas.has(p.numero)" class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                </div>
+                <span class="text-xs font-mono text-gray-400 w-6 shrink-0">{{ p.numero }}</span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-gray-800">
+                    <span :class="p.status === 'vencida' ? 'text-red-600' : 'text-gray-800'">
+                      {{ p.status === 'vencida' ? 'Vencida' : 'Próxima' }}
+                    </span>
+                    — vence em {{ formatDate(p.vencimento) }}
+                  </p>
+                  <p class="text-xs" :class="p.status === 'vencida' ? 'text-red-400' : 'text-gray-400'">
+                    {{ p.status === 'vencida' ? 'Em atraso' : 'Fatura vigente' }}
+                  </p>
+                </div>
+                <p class="font-semibold shrink-0" :class="parcelasContratoSelecionadas.has(p.numero) ? 'text-blue-800' : 'text-gray-800'">
+                  {{ formatMoney(p.valorAtualizado ?? p.valor) }}
+                </p>
+              </button>
+            </div>
+
+            <!-- Barra de pagamento -->
+            <Transition
+              enter-active-class="transition-all duration-200 ease-out"
+              enter-from-class="opacity-0 -translate-y-1"
+              enter-to-class="opacity-100 translate-y-0"
+              leave-active-class="transition-all duration-150"
+              leave-to-class="opacity-0"
+            >
+              <div v-if="parcelasContratoSelecionadas.size > 0" class="bg-blue-600 rounded-xl px-4 py-3.5 flex flex-wrap items-center justify-between gap-3">
+                <p class="text-sm text-white font-semibold">
+                  {{ parcelasContratoSelecionadas.size }} parcela{{ parcelasContratoSelecionadas.size > 1 ? 's' : '' }} selecionada{{ parcelasContratoSelecionadas.size > 1 ? 's' : '' }}
+                </p>
+                <div class="flex items-center gap-3">
+                  <span class="text-xl font-bold text-white">{{ formatMoney(totalContratoSelecionado) }}</span>
+                  <button
+                    @click="abrirModalPagamentoContrato()"
+                    class="bg-white text-blue-700 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors whitespace-nowrap"
+                  >
+                    Pagar agora
+                  </button>
+                </div>
+              </div>
+            </Transition>
+          </template>
+        </div>
+
         <!-- Acordo já ativo -->
-        <div v-else-if="acordoVivo" class="card text-center py-8">
+        <div v-if="contract && acordoVivo" class="card text-center py-8">
           <p class="text-gray-500">Este contrato já possui um acordo ativo.</p>
         </div>
 
@@ -1057,6 +1262,121 @@ function confirmPayment() {
           <h3 class="text-lg font-bold text-gray-900 mb-1">Pagamento registrado!</h3>
           <p class="text-sm text-gray-500 mb-6">Parcela confirmada com sucesso.</p>
           <button @click="fecharConfirmacaoParcela" class="btn-primary w-full">Fechar</button>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
+  <!-- ── Modais pagamento direto de parcelas do contrato ── -->
+
+  <!-- Modal: escolha método -->
+  <Teleport to="body">
+    <Transition enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0" leave-active-class="transition-opacity duration-200" leave-to-class="opacity-0">
+      <div v-if="modalPagamentoContrato" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 pb-4 sm:pb-0" role="dialog" aria-modal="true" aria-labelledby="ct-modal-met-title">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+          <h3 id="ct-modal-met-title" class="text-base font-semibold text-gray-900 mb-1">Escolha a forma de pagamento</h3>
+          <p class="text-sm text-gray-500 mb-4">Como o cliente prefere pagar estas parcelas?</p>
+          <div class="grid grid-cols-2 gap-3 mb-5">
+            <button
+              @click="metodoPagamentoContrato = 'pix'"
+              :class="metodoPagamentoContrato === 'pix' ? 'ring-2 ring-blue-600 bg-blue-50' : 'bg-gray-50 hover:bg-gray-100'"
+              class="rounded-xl p-4 flex flex-col items-center gap-2 transition-all"
+            >
+              <svg class="w-8 h-8 text-blue-600" viewBox="0 0 24 24" fill="currentColor"><path d="M11.3 2.4a1.2 1.2 0 011.4 0l7.2 5.2c.4.3.6.7.6 1.2v6.4c0 .5-.2.9-.6 1.2l-7.2 5.2a1.2 1.2 0 01-1.4 0L4.1 16.4A1.2 1.2 0 013.5 15V8.8c0-.5.2-.9.6-1.2L11.3 2.4z"/></svg>
+              <span class="text-sm font-semibold text-gray-800">Pix</span>
+              <span class="text-xs text-gray-400">Aprovação imediata</span>
+            </button>
+            <button
+              @click="metodoPagamentoContrato = 'boleto'"
+              :class="metodoPagamentoContrato === 'boleto' ? 'ring-2 ring-amber-500 bg-amber-50' : 'bg-gray-50 hover:bg-gray-100'"
+              class="rounded-xl p-4 flex flex-col items-center gap-2 transition-all"
+            >
+              <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+              <span class="text-sm font-semibold text-gray-800">Boleto</span>
+              <span class="text-xs text-gray-400">Vence em 1 dia útil</span>
+            </button>
+          </div>
+          <div class="flex gap-3">
+            <button @click="modalPagamentoContrato = false" class="btn-secondary flex-1">Cancelar</button>
+            <button @click="confirmarModalPagamentoContrato" :disabled="!metodoPagamentoContrato" class="btn-primary flex-1 disabled:opacity-40">Continuar</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
+  <!-- Modal: Pix contrato -->
+  <Teleport to="body">
+    <Transition enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0" leave-active-class="transition-opacity duration-200" leave-to-class="opacity-0">
+      <div v-if="pixAbertoContrato && pixParcelaContrato" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 pb-4 sm:pb-0" role="dialog" aria-modal="true" aria-labelledby="ct-modal-pix-title">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 id="ct-modal-pix-title" class="font-semibold text-gray-900 flex items-center gap-2">
+              <svg class="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="currentColor"><path d="M11.3 2.4a1.2 1.2 0 011.4 0l7.2 5.2c.4.3.6.7.6 1.2v6.4c0 .5-.2.9-.6 1.2l-7.2 5.2a1.2 1.2 0 01-1.4 0L4.1 16.4A1.2 1.2 0 013.5 15V8.8c0-.5.2-.9.6-1.2L11.3 2.4z"/></svg>
+              Pagar via Pix
+            </h3>
+            <button @click="fecharPixContrato" class="text-gray-400 hover:text-gray-600" aria-label="Fechar">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <p class="text-xs text-gray-500 mb-4">Total: <strong>{{ formatMoney(totalContratoSelecionado) }}</strong></p>
+          <div class="bg-gray-50 rounded-xl p-4 mb-3 flex justify-center">
+            <div class="w-32 h-32 grid grid-cols-8 gap-px" aria-hidden="true">
+              <template v-for="(v, i) in [1,1,1,1,1,1,1,0,1,0,0,0,1,0,0,1,1,0,1,1,1,0,1,0,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,0,1,0,0,0,1,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,1]" :key="i">
+                <div :class="v ? 'bg-gray-900' : 'bg-white'" class="aspect-square rounded-[1px]" />
+              </template>
+            </div>
+          </div>
+          <p class="text-center text-xs text-gray-400 mb-3">Escaneie o QR code ou copie a chave abaixo</p>
+          <div class="bg-gray-50 rounded-xl px-4 py-3 font-mono text-xs text-gray-800 break-all mb-4 select-all">{{ PIX_CHAVE }}</div>
+          <div class="flex flex-col gap-2">
+            <button @click="confirmarPixContrato" class="btn-primary w-full text-sm">Confirmar pagamento</button>
+            <button @click="copiarPixContrato" :class="pixCopiadoContrato ? 'btn-success' : 'btn-secondary'" class="w-full flex items-center justify-center gap-2 text-sm">
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"/></svg>
+              {{ pixCopiadoContrato ? 'Chave copiada!' : 'Copiar chave Pix' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
+  <!-- Modal: Boleto contrato -->
+  <Teleport to="body">
+    <Transition enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0" leave-active-class="transition-opacity duration-200" leave-to-class="opacity-0">
+      <div v-if="boletoAbertoContrato && boletoParcelaContrato" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 pb-4 sm:pb-0" role="dialog" aria-modal="true" aria-labelledby="ct-modal-boleto-title">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 id="ct-modal-boleto-title" class="font-semibold text-gray-900 flex items-center gap-2">
+              <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+              Boleto Bancário
+            </h3>
+            <button @click="fecharBoletoContrato" class="text-gray-400 hover:text-gray-600" aria-label="Fechar boleto">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <p class="text-xs text-gray-500 mb-4">Total: <strong>{{ formatMoney(totalContratoSelecionado) }}</strong></p>
+          <div class="bg-gray-50 rounded-xl p-3 mb-3 flex justify-center">
+            <div class="flex items-end gap-px h-12" aria-hidden="true">
+              <template v-for="(w, i) in [3,1,2,1,4,1,2,3,1,1,2,4,1,3,2,1,1,3,4,1,2,1,3,1,2,4,1,1,3,2,1,4,3,1,2,1,3,1,4,2,1,3,1,2]" :key="i">
+                <div class="bg-gray-800" :style="{ width: w + 'px', height: (i % 5 === 0 ? 100 : 80) + '%' }" />
+              </template>
+            </div>
+          </div>
+          <div class="bg-gray-50 rounded-xl px-4 py-3 font-mono text-xs text-gray-800 break-all mb-4 select-all">{{ BOLETO_CODIGO }}</div>
+          <div class="flex flex-col gap-2">
+            <button @click="confirmarBoletoContrato" class="btn-primary w-full text-sm">Confirmar pagamento</button>
+            <div class="flex gap-2">
+              <button @click="copiarBoletoContrato" :class="boletoCopiadoContrato ? 'btn-success' : 'btn-secondary'" class="flex-1 flex items-center justify-center gap-2 text-sm">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"/></svg>
+                {{ boletoCopiadoContrato ? 'Copiado!' : 'Copiar código' }}
+              </button>
+              <button @click="baixarBoletoContrato" class="btn-secondary flex items-center gap-2 text-sm">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                Baixar
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </Transition>

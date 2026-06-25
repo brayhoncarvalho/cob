@@ -106,6 +106,17 @@ const querySelecionadas = computed(() =>
 const parcelasEmAberto = computed(() =>
   contract.value?.parcelas.filter(p => p.status === 'vencida' || p.status === 'proxima') ?? []
 )
+
+const temVencidas = computed(() => parcelasEmAberto.value.some(p => p.status === 'vencida'))
+
+const tituloParcelas = computed(() => temVencidas.value ? 'Parcelas pendentes' : 'Próxima fatura')
+
+const subtituloParcelas = computed(() => {
+  if (temVencidas.value) return 'Selecione as que deseja pagar'
+  const proxima = parcelasEmAberto.value.find(p => p.status === 'proxima')
+  if (!proxima) return null
+  return noMesVigente(proxima) ? 'Vence este mês — selecione para pagar' : 'Vencimento no próximo mês'
+})
 </script>
 
 <template>
@@ -180,7 +191,7 @@ const parcelasEmAberto = computed(() =>
           </div>
         </div>
 
-        <!-- Encargos de atraso (colapsável) — só exibe se não há acordo ativo -->
+        <!-- Encargos de atraso (colapsável) — só exibe se não há acordo ativo
         <div v-if="contract.parcelasVencidas > 0 && !acordoAtivo" class="mt-4">
           <button
             @click="showEncargos = !showEncargos"
@@ -241,7 +252,7 @@ const parcelasEmAberto = computed(() =>
               </div>
             </div>
           </Transition>
-        </div>
+        </div> -->
 
         <!-- Acordo em análise na mesa de crédito -->
         <div v-if="acordoAtivo && acordoAtivo.status === 'em_analise'" class="mt-4 rounded-xl bg-amber-50 border border-amber-400/30 px-4 py-3 flex items-start gap-3">
@@ -319,12 +330,7 @@ const parcelasEmAberto = computed(() =>
             >
               Pagar entrada agora
             </RouterLink>
-            <button
-              @click="cancelarAcordo"
-              class="block w-full text-center text-xs text-green-200 hover:text-white py-1.5 transition-colors"
-            >
-              Cancelar acordo
-            </button>
+            <!-- cancelamento de acordo ativo é ação exclusiva do gerente -->
           </div>
         </div>
 
@@ -371,8 +377,8 @@ const parcelasEmAberto = computed(() =>
       <div v-if="parcelasEmAberto.length > 0 && !acordoAtivo && contract.status !== 'quitado'" class="card mb-4">
         <div class="flex items-center justify-between mb-3">
           <div>
-            <h3 class="font-semibold text-gray-900">Parcelas pendentes</h3>
-            <p class="text-xs text-gray-400 mt-0.5">Selecione as que deseja pagar</p>
+            <h3 class="font-semibold text-gray-900">{{ tituloParcelas }}</h3>
+            <p v-if="subtituloParcelas" class="text-xs text-gray-400 mt-0.5">{{ subtituloParcelas }}</p>
           </div>
           <div class="flex gap-3 text-xs">
             <button @click="selecionadas = new Set(parcelasEmAberto.map(p => p.numero))" class="text-blue-600 hover:underline font-medium">Selecionar todas</button>
@@ -461,6 +467,7 @@ const parcelasEmAberto = computed(() =>
           <h3 class="font-semibold text-gray-900">Extrato de parcelas</h3>
           <div class="flex flex-wrap gap-2">
             <RouterLink
+              v-if="!acordoAtivo"
               :to="`/contratos/${contract.id}/antecipar`"
               class="btn-secondary text-sm py-1.5 px-3"
             >

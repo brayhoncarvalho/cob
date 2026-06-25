@@ -4,11 +4,13 @@ import { useRoute, useRouter } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import { useFormatters } from '@/composables/useFormatters.js'
 import { useFlow } from '@/stores/flow.js'
+import { useRules } from '@/stores/rules.js'
 
 const route  = useRoute()
 const router = useRouter()
 const { formatMoney, formatDate } = useFormatters()
 const { state: flowState, payContractParcelas } = useFlow()
+const { rules } = useRules()
 
 const contract = computed(() => flowState.contracts.find(c => c.id === route.params.id))
 
@@ -54,7 +56,18 @@ const parcelasSelecionadas = computed(() => {
 
 const valorOriginal = computed(() => parcelasSelecionadas.value.reduce((s, p) => s + (p.valor ?? 0), 0))
 const jurosTotal    = computed(() => parcelasSelecionadas.value.reduce((s, p) => s + (p.juros ?? 0) + (p.multa ?? 0), 0))
-const valorTotal    = computed(() => parcelasSelecionadas.value.reduce((s, p) => s + (p.valorAtualizado ?? p.valor ?? 0), 0))
+
+// Desconto por antecipação: aplica-se apenas a parcelas futuras selecionadas
+const descontoAntecipacao = computed(() =>
+  parcelasSelecionadas.value
+    .filter(p => (p.status === 'futura' || p.status === 'proxima') && !p._acordo)
+    .reduce((s, p) => s + (p.valor ?? 0) * (rules.descontoAntecipacaoPct ?? 0), 0)
+)
+
+const valorTotal = computed(() =>
+  parcelasSelecionadas.value.reduce((s, p) => s + (p.valorAtualizado ?? p.valor ?? 0), 0)
+  - descontoAntecipacao.value
+)
 
 // Se há acordo em andamento (entrada paga) e nenhuma parcela via query, redireciona para o acordo
 watch(acordoEmAndamento, (neg) => {
@@ -183,6 +196,10 @@ function generateNew() {
               <div v-if="jurosTotal > 0" class="flex justify-between text-red-600">
                 <span>Juros + multa</span>
                 <span class="font-medium">+ {{ formatMoney(jurosTotal) }}</span>
+              </div>
+              <div v-if="descontoAntecipacao > 0" class="flex justify-between text-green-600">
+                <span>Desconto por antecipação ({{ ((rules.descontoAntecipacaoPct ?? 0) * 100).toFixed(1).replace(/\.0$/, '') }}%)</span>
+                <span class="font-medium">- {{ formatMoney(descontoAntecipacao) }}</span>
               </div>
               <div class="border-t border-gray-200 pt-2 mt-2 flex justify-between">
                 <span class="font-semibold text-gray-900">Total a pagar</span>

@@ -128,12 +128,12 @@ function _verificarBloqueio(contratoId) {
 
   return null
 }
+
 function submitProposal({ id, contratoId, entrada, numParcelas, valorParcela,
                           totalAcordo, desconto, proposalStatus }) {
   const bloqueio = _verificarBloqueio(contratoId)
   if (bloqueio) return { error: bloqueio }
   const isAuto = proposalStatus === 'auto'
-  const nivel  = proposalStatus === 'mesa2' ? 2 : 1
 
   // Remove qualquer proposta aberta anterior do mesmo contrato para não poluir
   // (mantém apenas as já resolvidas)
@@ -144,10 +144,10 @@ function submitProposal({ id, contratoId, entrada, numParcelas, valorParcela,
   const neg = {
     id,
     status:        isAuto ? 'em_pagamento' : 'em_analise',
-    nivel:         1, // sempre começa na mesa — analista decide se escala
+    nivel:         1, // sempre começa na Mesa (nível 1)
     contratoId,
     dataEnvio:     new Date().toISOString(),
-    prazoResposta: new Date(Date.now() + 24 * 3600000).toISOString(), // 24h sempre
+    prazoResposta: new Date(Date.now() + 24 * 3600000).toISOString(),
     entrada,
     numParcelas,
     valorParcela,
@@ -155,6 +155,12 @@ function submitProposal({ id, contratoId, entrada, numParcelas, valorParcela,
     totalDivida:   state.contracts.find(c => c.id === contratoId)?.saldoDevedor ?? 0,
     desconto,
     parcelas:      isAuto ? _buildParcelas({ entrada, numParcelas, valorParcela }) : null,
+    // Campos de histórico do fluxo de aprovação dupla
+    decisaoMesa:         null,
+    motivoMesa:          null,
+    dataDecisaoMesa:     null,
+    contrapropostaMesa:  null,
+    dataDecisaoGerencia: null,
     ...(isAuto ? { dataAprovacao: new Date().toISOString() } : {}),
   }
 
@@ -168,46 +174,100 @@ function submitProposal({ id, contratoId, entrada, numParcelas, valorParcela,
   return neg
 }
 
-/** Analista / Gerente aprova a proposta */
+/**
+ * Mesa (nível 1) ou Gerência (nível 2) aprova a proposta.
+ *
+ * - Mesa aprova: registra decisão, sobe para nível 2 (Gerência). NÃO ativa o contrato.
+ * - Gerência aprova: ativa o contrato (em_pagamento). Palavra final.
+ *   Se havia contraproposta da Mesa, usa os valores dela ao ativar.
+ */
 function approveNegotiation(id, { motivo = '' } = {}) {
   const neg = state.negotiations.find(n => n.id === id)
   if (!neg) return
-  neg.status        = 'em_pagamento'
-  neg.dataAprovacao = new Date().toISOString()
-  neg.motivoAnalise = motivo
-  if (!neg.parcelas) neg.parcelas = _buildParcelas(neg)
-  _activateContract(neg.contratoId, id)
+
+  const nivelAtual = neg.nivel ?? 1
+
+  if (nivelAtual === 1) {
+    // Mesa aprova → encaminha para Gerência
+    neg.decisaoMesa     = 'aprovada'
+    neg.motivoMesa      = motivo
+    neg.dataDecisaoMesa = new Date().toISOString()
+    neg.nivel           = 2
+    // Mantém status em_analise — não ativa o contrato
+  } else {
+    // Gerência aprova → ativa o acordo (palavra final)
+    // Se a Mesa tinha feito contraproposta, ativar com os valores aprovados pela Mesa
+    if (neg.contrapropostaMesa) {
+      neg.entrada      = neg.contrapropostaMesa.entrada
+      neg.numParcelas  = neg.contrapropostaMesa.numParcelas
+      neg.valorParcela = neg.contrapropostaMesa.valorParcela
+      neg.totalAcordo  = neg.contrapropostaMesa.total
+    }
+    neg.status              = 'em_pagamento'
+    neg.dataAprovacao       = new Date().toISOString()
+    neg.dataDecisaoGerencia = new Date().toISOString()
+    neg.motivoGerencia      = motivo
+    if (!neg.parcelas) neg.parcelas = _buildParcelas(neg)
+    _activateContract(neg.contratoId, id)
+  }
+
   persist()
 }
 
-/** Analista / Gerente reprova a proposta */
+/**
+ * Mesa (nível 1) ou Gerência (nível 2) reprova a proposta.
+ * Ambos finalizam direto — Mesa não precisa passar pela Gerência para reprovar.
+ */
 function rejectNegotiation(id, { motivo = '' } = {}) {
   const neg = state.negotiations.find(n => n.id === id)
   if (!neg) return
+  const nivelAtual = neg.nivel ?? 1
+  if (nivelAtual === 1) {
+    // Mesa reprova → finaliza sem passar pela Gerência
+    neg.decisaoMesa     = 'reprovada'
+    neg.motivoMesa      = motivo
+    neg.dataDecisaoMesa = new Date().toISOString()
+  } else {
+    // Gerência reprova → finaliza
+    neg.dataDecisaoGerencia = new Date().toISOString()
+    neg.motivoGerencia      = motivo
+  }
   neg.status = 'reprovada'
   neg.motivo = motivo
   persist()
 }
 
-/** Analista / Gerente envia contraproposta */
+/**
+ * Mesa (nível 1) ou Gerência (nível 2) envia contraproposta.
+ *
+ * - Mesa: salva em contrapropostaMesa, sobe para nível 2. Gerência valida.
+ * - Gerência: salva em contraproposta → cliente responde. Palavra final.
+ */
 function counterNegotiation(id, { motivo = '', entrada, numParcelas, valorParcela }) {
   const neg = state.negotiations.find(n => n.id === id)
   if (!neg) return
-  const ent  = Number(entrada)     || Math.ceil(neg.entrada * 1.3)
-  const np   = Number(numParcelas) || Math.ceil(neg.numParcelas * 0.7)
-  const vp   = Number(valorParcela)|| Math.ceil(neg.valorParcela * 1.2)
-  neg.status         = 'contraproposta'
-  neg.motivo         = motivo
-  neg.contraproposta = { entrada: ent, numParcelas: np, valorParcela: vp,
-                         total: ent + np * vp }
-  persist()
-}
 
-/** Analista escala para 2º Nível */
-function escalateNegotiation(id) {
-  const neg = state.negotiations.find(n => n.id === id)
-  if (!neg) return
-  neg.nivel = 2
+  const nivelAtual = neg.nivel ?? 1
+  const ent = Number(entrada)      || Math.ceil(neg.entrada * 1.3)
+  const np  = Number(numParcelas)  || Math.ceil(neg.numParcelas * 0.7)
+  const vp  = Number(valorParcela) || Math.ceil(neg.valorParcela * 1.2)
+
+  if (nivelAtual === 1) {
+    // Mesa faz contraproposta → encaminha para Gerência validar
+    neg.decisaoMesa        = 'contraproposta'
+    neg.motivoMesa         = motivo
+    neg.dataDecisaoMesa    = new Date().toISOString()
+    neg.contrapropostaMesa = { entrada: ent, numParcelas: np, valorParcela: vp, total: ent + np * vp }
+    neg.nivel              = 2
+    // Mantém status em_analise — não notifica cliente ainda
+  } else {
+    // Gerência faz contraproposta → vai para cliente (palavra final)
+    neg.status              = 'contraproposta'
+    neg.motivo              = motivo
+    neg.dataDecisaoGerencia = new Date().toISOString()
+    neg.contraproposta      = { entrada: ent, numParcelas: np, valorParcela: vp, total: ent + np * vp }
+  }
+
   persist()
 }
 
@@ -231,9 +291,11 @@ function markParcelaPaid(negId, parcelaIdx) {
   const neg = state.negotiations.find(n => n.id === negId)
   if (!neg?.parcelas) return
   neg.parcelas[parcelaIdx].status = 'paga'
+  neg.parcelas[parcelaIdx].dataPagamento = new Date().toISOString()
   // Seta entradaPaga quando a parcela de índice 0 (entrada) é paga
   if (parcelaIdx === 0) neg.entradaPaga = true
-  // Promove próxima futura para proxima
+  // Garante exatamente uma proxima: reseta eventuais extras, depois promove o próximo futura
+  neg.parcelas.forEach(p => { if (p.status === 'proxima') p.status = 'futura' })
   const next = neg.parcelas.find((p, i) => i > parcelaIdx && p.status === 'futura')
   if (next) next.status = 'proxima'
 
@@ -265,13 +327,20 @@ function markParcelaPaid(negId, parcelaIdx) {
 function payContractParcelas(contratoId, parcelaNumeros) {
   const c = state.contracts.find(c => c.id === contratoId)
   if (!c) return
+
+  // Subtrai do saldo apenas o que foi efetivamente pago (evita recalcular do zero
+  // com valorAtualizado das futuras, que difere do saldoDevedor original do contrato)
+  let pago = 0
   for (const num of parcelaNumeros) {
     const p = c.parcelas.find(p => p.numero === num)
     if (p && p.status !== 'paga') {
+      pago += p.valorAtualizado ?? p.valor ?? 0
       p.status = 'paga'
       p.dataPagamento = new Date().toISOString()
     }
   }
+  c.saldoDevedor = Math.max(0, (c.saldoDevedor ?? 0) - pago)
+
   // Marcar entradaPaga na negociação ativa deste contrato
   const negAtiva = state.negotiations.find(n =>
     n.contratoId === contratoId && n.status === 'em_pagamento'
@@ -318,7 +387,7 @@ function resetFlow() {
 /**
  * Atendente simula proposta em nome do cliente.
  * Se auto-aprovável → status em_pagamento direto.
- * Se não → status em_analise (vai para mesa de crédito).
+ * Se não → status em_analise (vai para Mesa de crédito).
  */
 function submitAttendantProposal({ id, contratoId, clienteCpf, entrada, numParcelas, valorParcela,
                                    totalAcordo, desconto, atendenteCpf, proposalStatus }) {
@@ -347,6 +416,12 @@ function submitAttendantProposal({ id, contratoId, clienteCpf, entrada, numParce
     totalDivida:         state.contracts.find(c => c.id === contratoId)?.saldoDevedor ?? 0,
     desconto:            Number(desconto),
     parcelas:            isAuto ? _buildParcelas({ entrada: Number(entrada), numParcelas: Number(numParcelas), valorParcela: Number(valorParcela) }) : null,
+    // Campos de histórico do fluxo de aprovação dupla
+    decisaoMesa:         null,
+    motivoMesa:          null,
+    dataDecisaoMesa:     null,
+    contrapropostaMesa:  null,
+    dataDecisaoGerencia: null,
   }
   state.negotiations.push(neg)
   if (isAuto) _activateContract(contratoId, id)
@@ -358,8 +433,6 @@ function submitAttendantProposal({ id, contratoId, clienteCpf, entrada, numParce
 function clientApproveProposal(id) {
   const neg = state.negotiations.find(n => n.id === id)
   if (!neg) return
-  // Segue o fluxo normal: vai para análise (mesa) ou auto-aprovação baseada nas regras
-  // Por simplicidade no demo: vai para em_pagamento direto (acordo iniciado)
   neg.status        = 'em_pagamento'
   neg.dataAprovacao = new Date().toISOString()
   neg.parcelas      = _buildParcelas(neg)
@@ -372,25 +445,51 @@ function clientRejectProposal(id) {
   const neg = state.negotiations.find(n => n.id === id)
   if (!neg) return
   neg.status = 'cancelada'
+  neg.dataCancelamento = new Date().toISOString()
+  neg.canceladoPor = 'cliente'
   persist()
 }
 
-/** Cliente cancela proposta que ainda está em análise */
+/** Cliente cancela proposta — apenas enquanto ainda não virou acordo ativo */
 function clientCancelNegotiation(id) {
   const neg = state.negotiations.find(n => n.id === id)
-  if (!neg || !['em_analise', 'contraproposta', 'em_pagamento'].includes(neg.status)) return
+  const cancellable =
+    ['em_analise', 'contraproposta'].includes(neg?.status) ||
+    (neg?.status === 'em_pagamento' && !neg.entradaPaga)
+  if (!neg || !cancellable) return
   neg.status = 'cancelada'
   neg.dataCancelamento = new Date().toISOString()
+  neg.canceladoPor = 'cliente'
   _deactivateContract(neg.contratoId)
   persist()
 }
 
-/** Atendente cancela proposta pendente de aprovação do cliente */
+/**
+ * Atendente cancela proposta — apenas enquanto ainda não virou acordo ativo.
+ */
 function cancelAttendantProposal(id) {
   const neg = state.negotiations.find(n => n.id === id)
-  if (!neg) return
+  const cancellable =
+    ['em_analise', 'contraproposta'].includes(neg?.status) ||
+    (neg?.status === 'em_pagamento' && !neg.entradaPaga)
+  if (!neg || !cancellable) return
   neg.status = 'cancelada'
   neg.dataCancelamento = new Date().toISOString()
+  neg.canceladoPor = 'atendente'
+  _deactivateContract(neg.contratoId)
+  persist()
+}
+
+/**
+ * Gerente cancela acordo — ação excepcional, pode cancelar qualquer estado não finalizado.
+ */
+function managerCancelNegotiation(id, { motivo = '' } = {}) {
+  const neg = state.negotiations.find(n => n.id === id)
+  if (!neg || ['cancelada', 'quitado', 'reprovada'].includes(neg.status)) return
+  neg.status = 'cancelada'
+  neg.dataCancelamento = new Date().toISOString()
+  neg.canceladoPor = 'gerente'
+  if (motivo) neg.motivoCancelamento = motivo
   _deactivateContract(neg.contratoId)
   persist()
 }
@@ -431,7 +530,6 @@ export function useFlow() {
     approveNegotiation,
     rejectNegotiation,
     counterNegotiation,
-    escalateNegotiation,
     acceptCounter,
     markParcelaPaid,
     payContractParcelas,
@@ -441,5 +539,6 @@ export function useFlow() {
     clientRejectProposal,
     cancelAttendantProposal,
     clientCancelNegotiation,
+    managerCancelNegotiation,
   }
 }

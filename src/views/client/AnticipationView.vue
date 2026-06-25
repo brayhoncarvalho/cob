@@ -33,7 +33,7 @@ const valorOriginal = computed(() =>
 )
 const desconto = computed(() => {
   const pct = rules.descontoAntecipacaoPct ?? 0.075
-  return valorOriginal.value * pct * Math.sqrt(selecionadas.value.size)
+  return valorOriginal.value * pct
 })
 const valorFinal = computed(() => Math.max(0, valorOriginal.value - desconto.value))
 

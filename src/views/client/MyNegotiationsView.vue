@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
@@ -10,23 +10,32 @@ const router = useRouter()
 const { formatMoney, formatDate, formatDateTime } = useFormatters()
 const { state: flowState, clientCancelNegotiation } = useFlow()
 
-// Ordenar: em análise primeiro, depois por data desc
-const negotiations = computed(() =>
-  [...flowState.negotiations].sort((a, b) => {
-    const order = { em_analise: 0, contraproposta: 1, em_pagamento: 2, aprovada: 3, reprovada: 4, quitado: 5, cancelada: 6 }
+const abaAtiva = ref('ativos')
+
+const STATUS_ATIVOS    = ['em_analise', 'contraproposta', 'em_pagamento', 'aprovada']
+const STATUS_HISTORICO = ['reprovada', 'quitado', 'cancelada']
+
+function ordenar(list) {
+  const order = { em_analise: 0, contraproposta: 1, em_pagamento: 2, aprovada: 3, reprovada: 4, quitado: 5, cancelada: 6 }
+  return [...list].sort((a, b) => {
     const oa = order[a.status] ?? 9
     const ob = order[b.status] ?? 9
     return oa !== ob ? oa - ob : b.dataEnvio.localeCompare(a.dataEnvio)
   })
-)
+}
+
+const negAtivos    = computed(() => ordenar(flowState.negotiations.filter(n => STATUS_ATIVOS.includes(n.status))))
+const negHistorico = computed(() => ordenar(flowState.negotiations.filter(n => STATUS_HISTORICO.includes(n.status))))
+const negotiations = computed(() => abaAtiva.value === 'ativos' ? negAtivos.value : negHistorico.value)
 
 const actionLabel = {
-  em_analise:   'Ver detalhes',
-  em_pagamento: 'Ver acordo',
-  aprovada:     'Ver acordo',
-  reprovada:    'Nova simulação',
+  em_analise:     'Ver detalhes',
+  em_pagamento:   'Ver acordo',
+  aprovada:       'Ver acordo',
+  reprovada:      'Nova simulação',
   contraproposta: 'Avaliar proposta',
-  cancelada:    'Ver histórico',
+  cancelada:      'Ver histórico',
+  quitado:        'Ver histórico',
 }
 
 function goAction(n) {
@@ -37,6 +46,24 @@ function goAction(n) {
 
 <template>
   <ClientLayout title="Minhas Negociações" back-to="/dashboard" back-label="Início">
+
+    <!-- Abas -->
+    <div class="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1">
+      <button
+        v-for="aba in [{ key: 'ativos', label: 'Acordos Ativos', count: negAtivos.length }, { key: 'historico', label: 'Histórico', count: negHistorico.length }]"
+        :key="aba.key"
+        type="button"
+        @click="abaAtiva = aba.key"
+        class="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all"
+        :class="abaAtiva === aba.key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+      >
+        {{ aba.label }}
+        <span
+          class="text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center"
+          :class="abaAtiva === aba.key ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-500'"
+        >{{ aba.count }}</span>
+      </button>
+    </div>
 
     <div v-if="negotiations.length === 0" class="card text-center py-12 text-gray-400">
       <svg class="w-10 h-10 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>

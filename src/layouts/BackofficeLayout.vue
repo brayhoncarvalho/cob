@@ -55,6 +55,7 @@ const navItems = computed(() => {
 })
 
 const showDropdown = ref(false)
+const mobileMenuOpen = ref(false)
 
 function handleLogout() {
   showDropdown.value = false
@@ -82,15 +83,21 @@ defineProps({
     <!-- Header -->
     <header class="bg-gray-900 text-white sticky top-0 z-40">
       <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <div class="flex items-center gap-6">
+        <div class="flex items-center gap-4">
           <RouterLink :to="isManager ? '/backoffice/gerente' : '/backoffice/fila'" class="flex items-center gap-2">
             <img :src="baseUrl + 'dock.png'" alt="Logo" class="h-7 w-auto brightness-0 invert" />
-            <!--
-            <span class="text-sm font-semibold text-gray-400">
-              {{ isManager ? 'Gestão de Crédito' : 'Mesa de Crédito' }}
-            </span>
-             -->
           </RouterLink>
+          <!-- Mobile hamburger -->
+          <button
+            @click="mobileMenuOpen = !mobileMenuOpen"
+            class="flex sm:hidden items-center justify-center w-9 h-9 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors"
+            :aria-expanded="mobileMenuOpen"
+            aria-label="Menu"
+          >
+            <svg v-if="!mobileMenuOpen" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+          <!-- Desktop nav -->
           <nav class="hidden sm:flex items-center gap-1">
             <RouterLink
               v-for="item in navItems"
@@ -151,6 +158,33 @@ defineProps({
         </div>
       </div>
     </header>
+
+    <!-- Mobile nav dropdown -->
+    <Transition
+      enter-active-class="transition-all duration-200 ease-out"
+      enter-from-class="opacity-0 -translate-y-1"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition-all duration-150 ease-in"
+      leave-to-class="opacity-0 -translate-y-1"
+    >
+      <div v-if="mobileMenuOpen" class="sm:hidden bg-gray-900 border-t border-gray-800 shadow-lg">
+        <nav class="px-3 py-2 space-y-0.5">
+          <RouterLink
+            v-for="item in navItems"
+            :key="item.to"
+            :to="item.to"
+            @click="mobileMenuOpen = false"
+            class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
+            active-class="text-white bg-gray-800"
+          >
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" :d="item.iconPath"/>
+            </svg>
+            <span>{{ item.label }}</span>
+          </RouterLink>
+        </nav>
+      </div>
+    </Transition>
 
     <!-- Sub-header -->
     <div v-if="backTo || title" class="bg-white border-b border-gray-200">

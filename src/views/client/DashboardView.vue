@@ -31,7 +31,7 @@ const totalEmAberto     = computed(() =>
 )
 const contratosAtivos   = computed(() => contracts.filter(c => c.status !== 'cancelado').length)
 const saldoTotal        = computed(() => contracts.reduce((s, c) => s + c.saldoDevedor, 0))
-const acordosAtivos     = computed(() => negotiations.filter(n => n.status === 'em_pagamento').length)
+const acordosAtivos     = computed(() => negotiations.filter(n => ['em_analise', 'contraproposta', 'em_pagamento', 'aprovada'].includes(n.status)).length)
 const negsPendentes     = computed(() => negotiations.filter(n => n.status === 'em_analise').length)
 const primeiroContratoEmAtraso = computed(() =>
   contractsSemAcordo.value.find(c => c.parcelasVencidas > 0 || c.status === 'em_atraso') ?? null
@@ -69,6 +69,25 @@ const notificacoes = computed(() => {
 // Propostas do atendente aguardando aprovação do cliente
 const propostasAtendente = computed(() =>
   negotiations.filter(n => n.status === 'pending_client_approval')
+)
+
+// Acordo ativo com entrada paga
+const acordoAtivoComEntradaPaga = computed(() =>
+  negotiations.find(n => n.status === 'em_pagamento' && n.entradaPaga) ?? null
+)
+
+const proximaParcelaAcordo = computed(() => {
+  const neg = acordoAtivoComEntradaPaga.value
+  if (!neg) return null
+  return neg.parcelas?.find(p => p.status === 'proxima') ?? null
+})
+
+const parcelasPagasAcordo = computed(() =>
+  (acordoAtivoComEntradaPaga.value?.parcelas ?? []).filter(p => p.status === 'paga' && p.tipo !== 'entrada').length
+)
+
+const totalParcelasAcordo = computed(() =>
+  (acordoAtivoComEntradaPaga.value?.parcelas ?? []).filter(p => p.tipo !== 'entrada').length
 )
 
 // Acordos aprovados pela mesa aguardando pagamento da entrada
@@ -289,6 +308,42 @@ function goToNegociacoes() {
         </div>
       </button>
     </div>
+
+    <!-- Card: Acordo ativo (com entrada paga) -->
+    <RouterLink
+      v-if="acordoAtivoComEntradaPaga"
+      :to="`/negociacoes/${acordoAtivoComEntradaPaga.id}`"
+      class="card mb-6 block hover:shadow-md transition-shadow border-l-4 border-l-blue-500"
+    >
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <h2 class="font-semibold text-gray-900 text-sm">Seu acordo ativo</h2>
+          <p class="text-xs text-gray-400 font-mono mt-0.5">{{ acordoAtivoComEntradaPaga.id }}</p>
+        </div>
+        <span class="text-xs font-medium text-blue-600 shrink-0">Ver detalhes →</span>
+      </div>
+      <div class="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <p class="text-xs text-gray-400">Próxima parcela</p>
+          <p v-if="proximaParcelaAcordo" class="font-semibold text-gray-900 mt-0.5">{{ formatDate(proximaParcelaAcordo.vencimento) }}</p>
+          <p v-else class="text-gray-400 mt-0.5">—</p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs text-gray-400">Valor</p>
+          <p v-if="proximaParcelaAcordo" class="font-semibold text-blue-700 mt-0.5">{{ formatMoney(proximaParcelaAcordo.valor) }}</p>
+          <p v-else class="text-gray-400 mt-0.5">—</p>
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="flex justify-between text-xs text-gray-400 mb-1">
+          <span>{{ parcelasPagasAcordo }} de {{ totalParcelasAcordo }} parcelas pagas</span>
+          <span>{{ totalParcelasAcordo > 0 ? Math.round(parcelasPagasAcordo / totalParcelasAcordo * 100) : 0 }}%</span>
+        </div>
+        <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <div class="h-full bg-green-500 rounded-full transition-all" :style="{ width: (totalParcelasAcordo > 0 ? parcelasPagasAcordo / totalParcelasAcordo * 100 : 0) + '%' }" />
+        </div>
+      </div>
+    </RouterLink>
 
     <!-- Contratos resumo -->
     <div class="card mb-6">

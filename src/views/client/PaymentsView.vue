@@ -10,7 +10,7 @@ const { state: flowState } = useFlow()
 const contracts    = flowState.contracts
 const negotiations = flowState.negotiations
 
-// Contratos que têm acordo ativo — parcelas do contrato ficam suspensas
+// Contratos com acordo ativo — vencidas ficam suspensas (cobertas pelo acordo)
 const contratoComAcordo = computed(() =>
   new Set(negotiations.filter(n => n.status === 'em_pagamento').map(n => n.contratoId))
 )
@@ -19,7 +19,7 @@ const contratoComAcordo = computed(() =>
 const parcelasEmAtraso = computed(() => {
   const items = []
   contracts.forEach(c => {
-    if (contratoComAcordo.value.has(c.id)) return
+    if (contratoComAcordo.value.has(c.id)) return  // vencidas cobertas pelo acordo
     if (c.status === 'quitado') return
     c.parcelas.filter(p => p.status === 'vencida').forEach(p => {
       items.push({
@@ -73,7 +73,6 @@ const parcelasEmAtraso = computed(() => {
 const proximosVencimentos = computed(() => {
   const items = []
   contracts.forEach(c => {
-    if (contratoComAcordo.value.has(c.id)) return
     if (c.status === 'quitado') return
     c.parcelas.filter(p => p.status === 'proxima').forEach(p => {
       items.push({

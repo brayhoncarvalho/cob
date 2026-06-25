@@ -11,6 +11,8 @@ const { formatMoney, formatDate, formatDateTime } = useFormatters()
 const router = useRouter()
 const { state: flowState, markParcelaPaid, clientCancelNegotiation, acceptCounter } = useFlow()
 
+const histAberto = ref(false)
+
 function cancelarProposta() {
   clientCancelNegotiation(negotiation.value.id)
   router.push('/negociacoes')
@@ -142,6 +144,8 @@ function confirmarPixPagamento() {
     idxList.forEach(idx => markParcelaPaid(negotiation.value.id, idx))
     pagandoIndex.value = null
     pagamentoConfirmado.value = true
+    const proxIdx = negotiation.value?.parcelas?.findIndex(p => p.status === 'proxima') ?? -1
+    parcelasSelecionadas.value = new Set(proxIdx >= 0 ? [proxIdx] : [])
   }
 }
 
@@ -165,6 +169,8 @@ function confirmarBoletoPagamento() {
     idxList.forEach(idx => markParcelaPaid(negotiation.value.id, idx))
     pagandoIndex.value = null
     pagamentoConfirmado.value = true
+    const proxIdx = negotiation.value?.parcelas?.findIndex(p => p.status === 'proxima') ?? -1
+    parcelasSelecionadas.value = new Set(proxIdx >= 0 ? [proxIdx] : [])
   }
 }
 
@@ -193,6 +199,95 @@ function baixarBoleto() {
 }
 
 // Pix — definido acima (bloco "Pix mockado")
+
+// ── Histórico do acordo (timeline unificada) ──────────────────────────────────
+const eventosTL = computed(() => {
+  const neg = negotiation.value
+  if (!neg) return []
+  const evs = []
+  const isActive = ['em_analise', 'contraproposta', 'em_pagamento'].includes(neg.status)
+  const wasAutoApproved = !neg.dataDecisaoMesa && !!neg.dataAprovacao
+
+  // 1. Proposta enviada
+  if (neg.dataEnvio) {
+    evs.push({ label: 'Proposta enviada', sub: `${neg.numParcelas}x de ${formatMoney(neg.valorParcela)} + entrada ${formatMoney(neg.entrada)}`, date: neg.dataEnvio, cor: 'blue' })
+  }
+
+  if (!wasAutoApproved) {
+    // 2. Mesa de Crédito
+    if (neg.dataDecisaoMesa) {
+      const decisaoLabel = {
+        aprovada: 'Mesa de Crédito aprovou',
+        reprovada: 'Mesa de Crédito reprovou',
+        contraproposta: 'Mesa de Crédito fez contraproposta',
+      }[neg.decisaoMesa] ?? 'Mesa de Crédito analisou'
+      let sub = ''
+      if (neg.decisaoMesa === 'contraproposta' && neg.contrapropostaMesa) {
+        sub = `Entrada ${formatMoney(neg.contrapropostaMesa.entrada)} + ${neg.contrapropostaMesa.numParcelas}x de ${formatMoney(neg.contrapropostaMesa.valorParcela)}`
+      }
+      evs.push({ label: decisaoLabel, sub, date: neg.dataDecisaoMesa, cor: neg.decisaoMesa === 'reprovada' ? 'red' : neg.decisaoMesa === 'contraproposta' ? 'amber' : 'green' })
+    } else if (isActive) {
+      evs.push({ label: 'Aguardando análise — Mesa de Crédito', sub: '', date: null, cor: 'gray', pending: true })
+    }
+
+    // 3. Gerência (após Mesa agir, exceto reprovou)
+    if (neg.dataDecisaoMesa && neg.decisaoMesa !== 'reprovada') {
+      if (neg.dataDecisaoGerencia) {
+        const isContraproposta = !!neg.contraproposta
+        const label = isContraproposta ? 'Gerência enviou contraproposta'
+          : (neg.status === 'reprovada' && !neg.dataAprovacao) ? 'Gerência reprovou'
+          : 'Gerência aprovou'
+        let sub = ''
+        if (isContraproposta && neg.contraproposta) {
+          sub = `Entrada ${formatMoney(neg.contraproposta.entrada)} + ${neg.contraproposta.numParcelas}x de ${formatMoney(neg.contraproposta.valorParcela)}`
+        }
+        evs.push({ label, sub, date: neg.dataDecisaoGerencia, cor: isContraproposta ? 'amber' : (neg.status === 'reprovada' && !neg.dataAprovacao) ? 'red' : 'green' })
+        // Aguardando resposta do cliente na contraproposta
+        if (neg.status === 'contraproposta') {
+          evs.push({ label: 'Aguardando resposta do cliente', sub: 'Aceitar ou recusar a contraproposta', date: null, cor: 'gray', pending: true })
+        }
+      } else if (isActive) {
+        evs.push({ label: 'Aguardando aprovação — Gerência', sub: '', date: null, cor: 'gray', pending: true })
+      }
+    }
+  }
+
+  // 4. Acordo ativado
+  if (neg.dataAprovacao) {
+    const subAtivado = wasAutoApproved
+      ? `Aprovação automática — Total: ${formatMoney(neg.totalAcordo)}`
+      : `Total: ${formatMoney(neg.totalAcordo)}`
+    evs.push({ label: 'Acordo ativado', sub: subAtivado, date: neg.dataAprovacao, cor: 'green' })
+
+    // 5. Entrada
+    if (neg.entradaPaga) {
+      const entradaParc = neg.parcelas?.[0]
+      evs.push({ label: 'Entrada paga', sub: formatMoney(neg.entrada), date: entradaParc?.dataPagamento ?? null, cor: 'green' })
+    } else if (isActive) {
+      evs.push({ label: 'Aguardando pagamento da entrada', sub: formatMoney(neg.entrada), date: null, cor: 'gray', pending: true })
+    }
+
+  }
+
+  // 7. Acordo quitado
+  if (neg.dataQuitacao) {
+    evs.push({ label: 'Acordo quitado', sub: 'Todas as parcelas pagas com sucesso', date: neg.dataQuitacao, cor: 'green' })
+  }
+
+  // 8. Cancelado
+  if (neg.dataCancelamento) {
+    const quemCancelou = {
+      cliente:   'Cancelado pelo cliente',
+      atendente: 'Cancelado pelo atendente',
+      gerente:   'Cancelado pela gerência',
+      mesa:      'Cancelado pela Mesa de Crédito',
+    }[neg.canceladoPor] ?? 'Cancelado'
+    const subCancel = [quemCancelou, neg.motivoCancelamento].filter(Boolean).join(' — ')
+    evs.push({ label: 'Proposta cancelada', sub: subCancel, date: neg.dataCancelamento, cor: 'red' })
+  }
+
+  return evs
+})
 </script>
 
 <template>
@@ -252,8 +347,8 @@ function baixarBoleto() {
             : negotiation.status === 'cancelada' ? 'text-gray-400'
             : 'text-gray-500'"
         >
-          <span v-if="negotiation.status === 'em_analise'">Aguardando análise da Mesa de Crédito</span>
-          <span v-else-if="negotiation.status === 'contraproposta'">A Mesa enviou uma contraproposta — avalie antes do prazo expirar</span>
+          <span v-if="negotiation.status === 'em_analise'">Aguardando análise da Mesa de Crédito e validação da Gerência</span>
+          <span v-else-if="negotiation.status === 'contraproposta'">A Gerência enviou uma contraproposta — avalie antes do prazo expirar</span>
           <span v-else-if="negotiation.status === 'em_pagamento'">Acordo ativo — mantenha os pagamentos em dia</span>
           <span v-else-if="negotiation.status === 'reprovada'">Proposta reprovada</span>
           <span v-else-if="negotiation.status === 'cancelada'">Proposta cancelada</span>
@@ -291,16 +386,11 @@ function baixarBoleto() {
           </div>
         </div>
 
-        <!--
-        <div v-if="negotiation.status === 'em_pagamento'" class="alert-warning mt-4 text-xs flex items-start gap-1.5">
-          <svg class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
-          <span>O não pagamento de qualquer parcela por mais de 10 dias cancela o acordo e restaura o débito original.</span>
-        </div>-->
 
         <div v-if="negotiation.status === 'em_analise'" class="alert-info mt-4 text-xs flex items-center justify-between gap-3">
           <div class="flex items-center gap-1.5">
             <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span>Sua proposta está sendo avaliada pela Mesa de Crédito. Prazo: {{ formatDateTime(negotiation.prazoResposta) }}.</span>
+            <span>Sua proposta está sendo avaliada pela equipe de crédito (Mesa e Gerência). Prazo: {{ formatDateTime(negotiation.prazoResposta) }}.</span>
           </div>
           <button
             type="button"
@@ -311,9 +401,9 @@ function baixarBoleto() {
         <div v-if="negotiation.status === 'contraproposta'" class="mt-4 rounded-2xl bg-amber-50 border-2 border-amber-400 px-5 py-4">
           <div class="flex items-center gap-2 mb-2">
             <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
-            <p class="font-bold text-amber-800 text-sm">Contraproposta recebida!</p>
+            <p class="font-bold text-amber-800 text-sm">Contraproposta da Gerência!</p>
           </div>
-          <p class="text-xs text-amber-700 mb-3">A Mesa de Crédito enviou novas condições. Avalie e decida antes do prazo expirar.</p>
+          <p class="text-xs text-amber-700 mb-3">A Gerência de Crédito enviou novas condições. Avalie e decida antes do prazo expirar.</p>
           <div class="bg-white rounded-xl px-4 py-3 space-y-1.5 text-xs mb-4 border border-amber-200">
             <div class="flex justify-between">
               <span class="text-gray-500">Nova entrada</span>
@@ -460,12 +550,70 @@ function baixarBoleto() {
                 <td class="py-2.5 text-center">
                   <StatusBadge :status="p.status" small />
                 </td>
-                <td class="py-2.5 text-right text-xs text-gray-400">{{ p.dataPagamento ? formatDate(p.dataPagamento) : '—' }}</td>
+                <td class="py-2.5 text-right text-xs text-gray-400">{{ p.dataPagamento ? formatDateTime(p.dataPagamento) : '—' }}</td>
               </tr>
             </tbody>
           </table>
         </div>
         </div>
+      </div>
+
+      <!-- ── HISTÓRICO DO ACORDO (accordion) ──────────────────────────────── -->
+      <div v-if="eventosTL.length" class="card mb-5">
+        <button
+          type="button"
+          class="w-full flex items-center justify-between gap-2 text-left"
+          @click="histAberto = !histAberto"
+        >
+          <h3 class="font-semibold text-gray-900">Histórico do acordo</h3>
+          <svg
+            class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200"
+            :class="histAberto ? 'rotate-180' : ''"
+            fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+
+        <Transition
+          enter-active-class="transition-all duration-200 ease-out overflow-hidden"
+          enter-from-class="opacity-0 max-h-0"
+          enter-to-class="opacity-100 max-h-[2000px]"
+          leave-active-class="transition-all duration-150 ease-in overflow-hidden"
+          leave-from-class="opacity-100 max-h-[2000px]"
+          leave-to-class="opacity-0 max-h-0"
+        >
+          <div v-if="histAberto" class="mt-4 relative">
+            <div class="absolute left-[15px] top-0 bottom-0 w-0.5 bg-gray-100" />
+            <div class="space-y-4">
+              <div v-for="(ev, i) in eventosTL" :key="i" class="flex gap-4 relative">
+                <div
+                  class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 transition-opacity"
+                  :class="{
+                    'bg-green-100': ev.cor === 'green',
+                    'bg-red-100': ev.cor === 'red',
+                    'bg-blue-100': ev.cor === 'blue',
+                    'bg-amber-100': ev.cor === 'amber',
+                    'bg-gray-100': ev.cor === 'gray',
+                    'opacity-50': ev.pending,
+                  }"
+                >
+                  <svg v-if="ev.cor === 'green'" class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                  <svg v-else-if="ev.cor === 'red'" class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                  <svg v-else-if="ev.cor === 'blue'" class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12z"/></svg>
+                  <svg v-else-if="ev.cor === 'amber'" class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
+                  <svg v-else class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div class="flex-1 min-w-0 pt-1">
+                  <p class="text-sm font-semibold" :class="ev.pending ? 'text-gray-400' : 'text-gray-900'">{{ ev.label }}</p>
+                  <p v-if="ev.sub" class="text-xs text-gray-500 mt-0.5">{{ ev.sub }}</p>
+                  <p v-if="ev.date" class="text-xs text-gray-400 mt-0.5">{{ formatDateTime(ev.date) }}</p>
+                  <p v-else-if="ev.pending" class="text-xs text-gray-300 mt-0.5 italic">Em andamento…</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Transition>
       </div>
 
       <!-- Modal: escolha de método de pagamento -->
@@ -648,6 +796,16 @@ function baixarBoleto() {
       </div>
 
     </template>
+
+    <!-- Cancelar acordo (apenas antes de pagar a entrada) -->
+    <div v-if="negotiation?.status === 'em_pagamento' && !negotiation.entradaPaga" class="mt-4 text-center">
+      <button
+        type="button"
+        @click="cancelarProposta"
+        class="btn-danger text-sm px-6"
+      >Cancelar acordo</button>
+    </div>
+
     <div class="h-16 sm:hidden" />
   </ClientLayout>
 </template>

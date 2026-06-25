@@ -21,6 +21,7 @@ const userInitials = computed(() => {
 })
 
 const showDropdown = ref(false)
+const mobileMenuOpen = ref(false)
 
 function handleLogout() {
   showDropdown.value = false
@@ -48,10 +49,21 @@ defineProps({
     <!-- Header -->
     <header class="bg-blue-700 text-white sticky top-0 z-40">
       <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <div class="flex items-center gap-6">
+        <div class="flex items-center gap-4">
           <RouterLink to="/atendimento" class="flex items-center gap-2">
             <img :src="baseUrl + 'dock.png'" alt="Logo" class="h-7 w-auto brightness-0 invert" />
           </RouterLink>
+          <!-- Mobile hamburger -->
+          <button
+            @click="mobileMenuOpen = !mobileMenuOpen"
+            class="flex sm:hidden items-center justify-center w-9 h-9 rounded-lg text-blue-200 hover:text-white hover:bg-blue-600 transition-colors"
+            :aria-expanded="mobileMenuOpen"
+            aria-label="Menu"
+          >
+            <svg v-if="!mobileMenuOpen" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+          <!-- Desktop nav -->
           <nav class="hidden sm:flex items-center gap-1">
             <RouterLink
               to="/atendimento"
@@ -113,6 +125,31 @@ defineProps({
         </div>
       </div>
     </header>
+
+    <!-- Mobile nav dropdown -->
+    <Transition
+      enter-active-class="transition-all duration-200 ease-out"
+      enter-from-class="opacity-0 -translate-y-1"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition-all duration-150 ease-in"
+      leave-to-class="opacity-0 -translate-y-1"
+    >
+      <div v-if="mobileMenuOpen" class="sm:hidden bg-blue-800 border-t border-blue-700 shadow-lg">
+        <nav class="px-3 py-2">
+          <RouterLink
+            to="/atendimento"
+            @click="mobileMenuOpen = false"
+            class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-blue-200 hover:text-white hover:bg-blue-700 transition-colors"
+            active-class="text-white bg-blue-700"
+          >
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+            </svg>
+            <span>Painel</span>
+          </RouterLink>
+        </nav>
+      </div>
+    </Transition>
 
     <!-- Page content -->
     <main class="max-w-7xl mx-auto px-4 py-6">
