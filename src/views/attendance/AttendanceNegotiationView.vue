@@ -1094,7 +1094,7 @@ function fecharBoletoContrato() {
                     — vence em {{ formatDate(p.vencimento) }}
                   </p>
                   <p class="text-xs" :class="p.status === 'vencida' ? 'text-red-400' : 'text-gray-400'">
-                    {{ p.status === 'vencida' ? 'Em atraso' : 'Fatura vigente' }}
+                    {{ p.status === 'vencida' ? `Em atraso — ${Math.floor((Date.now() - new Date(p.vencimento).getTime()) / 86400000)} dias` : 'Fatura vigente' }}
                   </p>
                 </div>
                 <p class="font-semibold shrink-0" :class="parcelasContratoSelecionadas.has(p.numero) ? 'text-blue-800' : 'text-gray-800'">
